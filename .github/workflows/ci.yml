@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check commit message format
+        if: github.event_name == 'pull_request'
+        run: |
+          # 检查 PR 中的 commit 消息是否符合 Conventional Commits 规范
+          COMMITS=$(git log --format="%s" origin/main..HEAD)
+          PATTERN="^(feat|fix|docs|style|refactor|test|chore|perf)(\(.+\))?: .+"
+          while IFS= read -r commit; do
+            if [[ ! "$commit" =~ $PATTERN ]]; then
+              echo "❌ 不符合规范的 commit: $commit"
+              echo "格式要求: <type>(<scope>): <subject>"
+              exit 1
+            fi
+          done <<< "$COMMITS"
+          echo "✅ 所有 commit 消息格式正确"
+
+      - name: Check for sensitive files
+        run: |
+          # 检查是否有敏感文件被提交
+          SENSITIVE_PATTERNS=(".env" "config.json" "*.pem" "*.key" "credentials*")
+          for pattern in "${SENSITIVE_PATTERNS[@]}"; do
+            if git ls-files | grep -q "$pattern"; then
+              echo "⚠️ 发现可能包含敏感信息的文件: $pattern"
+            fi
+          done
+
+      - name: Verify skill structure
+        run: |
+          # 验证 skill 目录结构（单层: skills/<skill-name>/）
+          for skill in skills/*/; do
+            if [ -d "$skill" ]; then
+              skill_name=$(basename "$skill")
+              if [ ! -f "$skill/SKILL.md" ]; then
+                echo "❌ $skill_name 缺少 SKILL.md"
+                exit 1
+              fi
+              if [ ! -f "$skill/README.md" ]; then
+                echo "❌ $skill_name 缺少 README.md"
+                exit 1
+              fi
+              echo "✅ $skill_name 结构检查通过"
+            fi
+          done
