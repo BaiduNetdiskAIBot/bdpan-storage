@@ -73,8 +73,8 @@ jobs:
           echo "" >> $GITHUB_OUTPUT
           echo "### 安装方法:" >> $GITHUB_OUTPUT
           echo '```bash' >> $GITHUB_OUTPUT
-          echo '# 使用 Claude Skills CLI 安装' >> $GITHUB_OUTPUT
-          echo 'npx skills add <repo-owner>/<repo-name>@<skill-name>' >> $GITHUB_OUTPUT
+          echo '# 使用 npm 进行安装' >> $GITHUB_OUTPUT
+          echo 'npx skills add https://github.com/baidu-netdisk/bdpan-storage@bdpan-storage' >> $GITHUB_OUTPUT
           echo '```' >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 

@@ -1,8 +1,8 @@
 # bdpan-storage
 
-> 百度网盘 Skill — 上传、下载、转存、分享，一句话搞定。
+> 百度网盘 skill — 上传、下载、转存、分享，一句话搞定。
 
-[![Skill](https://img.shields.io/badge/Skill-bdpan--storage-blue)](https://pan.baidu.com/apaastobui/developer#/developer/skill)
+[![skill](https://img.shields.io/badge/skill-bdpan--storage-blue)](https://pan.baidu.com/apaastobui/developer#/developer/skill)
 [![Version](https://img.shields.io/badge/version-v1.0.0-green)]()
 [![License](https://img.shields.io/badge/license-MIT-yellow)](./LICENSE)
 
