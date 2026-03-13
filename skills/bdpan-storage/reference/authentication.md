@@ -8,7 +8,7 @@
 
 **无论通过哪种方式登录，在执行登录命令之前，必须先向用户展示安全须知与免责声明，并获得用户确认。**
 
-免责声明内容参见 SKILL.md 中的「安全须知与免责声明 (BETA)」章节。
+免责声明内容参见 [reference/notes.md](./notes.md)。
 
 - **login.sh 脚本（唯一入口）**：脚本内置了免责声明展示和确认流程，**Agent 必须且只能通过此脚本执行登录**
 - **⛔ 严禁 Agent 直接调用** `bdpan login --get-auth-url`、`bdpan login --set-code` 或任何 bdpan login 子命令
