@@ -19,17 +19,20 @@
 
 ### 登录脚本路径
 
-Agent 登录必须通过以下脚本执行：
+**强制要求：必须使用登录脚本**
 
 ```bash
 bash scripts/login.sh
 ```
 
-该脚本内置了免责声明展示和完整的授权流程。严禁 Agent 直接调用 `bdpan login --get-auth-url`、`bdpan login --set-code` 等子命令。
+**强制要求：**
+- ✅ **必须使用** `@skills/bdpan-storage/scripts/login.sh` 脚本
+- ❌ **禁止**直接使用 `bdpan login`（即使在 GUI 环境）
+- ❌ **禁止**直接调用 `bdpan login --get-auth-url`、`bdpan login --set-code`
 
-在 GUI 桌面环境中，`bdpan login` 会自动弹出 WebView 完成授权，但 Agent 场景下仍应通过 login.sh 保证免责声明展示。
+该脚本内置了免责声明展示和完整的授权流程，确保用户知情同意。
 
-二维码登录：`bash scripts/login.sh --qrcode`
+跳过确认（自动化场景）：`bash scripts/login.sh --yes`
 
 ---
 

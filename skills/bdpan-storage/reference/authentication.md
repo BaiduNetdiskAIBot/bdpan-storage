@@ -18,27 +18,11 @@
 
 ## 登录方式
 
-### 方式一：WebView 自动登录（GUI 环境）
-
-适用场景：macOS 桌面环境、带图形界面的 Linux 发行版
-
-```bash
-bdpan login
-```
-
-**流程说明：**
-1. 执行命令后，工具会自动弹出 WebView 授权窗口
-2. 在 WebView 中完成百度账号登录和授权
-3. 授权成功后，窗口自动关闭
-4. Token 自动保存到配置文件
-
----
-
-### 方式二：OOB 手动授权（非 GUI 环境）
-
-适用场景：SSH 远程登录、无图形界面的服务器环境
+**强制要求：必须使用登录脚本**
 
 > **⛔ Agent 必须且只能通过 login.sh 脚本执行登录，严禁直接调用 bdpan login 子命令。**
+>
+> **⛔ 即使在 GUI 环境（macOS、桌面 Linux），也禁止使用 `bdpan login` 直接弹出 WebView。**
 
 ```bash
 bash scripts/login.sh
