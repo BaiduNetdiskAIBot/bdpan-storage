@@ -1,0 +1,98 @@
+name: Release Skills
+
+on:
+  push:
+    tags:
+      - 'v*'      # 推送 v 开头的 tag 时触发，如 v1.0.0
+      - 'skill-*' # 或 skill- 开头的 tag，如 skill-v1.0.0
+
+permissions:
+  contents: write  # 允许创建 Release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Package Skills
+        run: |
+          # 创建输出目录
+          mkdir -p dist
+
+          # 查找所有 skills 并打包
+          for skill_path in skills/*/; do
+            if [ -d "$skill_path" ]; then
+              skill_name=$(basename "$skill_path")
+              echo "📦 打包: $skill_name"
+
+              # 打包 skill，排除不需要的文件
+              (cd skills && zip -r "../dist/${skill_name}.zip" "$skill_name" \
+                -x "*/.git/*" \
+                -x "*/.DS_Store" \
+                -x "*/node_modules/*" \
+                -x "*/__pycache__/*" \
+                -x "*/.env*" \
+                -x "*/.idea/*" \
+                -x "*/.vscode/*" \
+                -x "*/dist/*" \
+                -x "*/build/*" \
+                -x "*.pyc" \
+                -x "*.log" \
+                -x "*.tmp")
+
+              echo "✅ 完成: dist/${skill_name}.zip"
+            fi
+          done
+
+      - name: Generate Release Notes
+        id: release_notes
+        run: |
+          # 生成发布说明
+          echo "RELEASE_NOTES<<EOF" >> $GITHUB_OUTPUT
+          echo "## 📦 Skills 发布" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "### 包含的 Skills:" >> $GITHUB_OUTPUT
+
+          for skill_path in skills/*/; do
+            if [ -d "$skill_path" ]; then
+              skill_name=$(basename "$skill_path")
+              skill_file="${skill_path}/SKILL.md"
+
+              if [ -f "$skill_file" ]; then
+                # 提取 description（从 frontmatter）
+                desc=$(grep "^description:" "$skill_file" | head -1 | sed 's/description: //' || echo "暂无描述")
+                echo "- **${skill_name}**: ${desc}" >> $GITHUB_OUTPUT
+              else
+                echo "- **${skill_name}**" >> $GITHUB_OUTPUT
+              fi
+            fi
+          done
+
+          echo "" >> $GITHUB_OUTPUT
+          echo "### 安装方法:" >> $GITHUB_OUTPUT
+          echo '```bash' >> $GITHUB_OUTPUT
+          echo '# 使用 Claude Skills CLI 安装' >> $GITHUB_OUTPUT
+          echo 'npx skills add <repo-owner>/<repo-name>@<skill-name>' >> $GITHUB_OUTPUT
+          echo '```' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: ${{ steps.release_notes.outputs.RELEASE_NOTES }}
+          files: dist/*.zip
+          draft: false
+          prerelease: ${{ contains(github.ref, '-alpha') || contains(github.ref, '-beta') || contains(github.ref, '-rc') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "## 🎉 Release 创建成功!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**包含的文件:**" >> $GITHUB_STEP_SUMMARY
+          ls -lh dist/*.zip | awk '{print "- " $9 " (" $5 ")"}' >> $GITHUB_STEP_SUMMARY
