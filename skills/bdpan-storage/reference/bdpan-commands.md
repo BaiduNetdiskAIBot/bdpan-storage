@@ -102,7 +102,7 @@ bdpan download "https://pan.baidu.com/s/1xxxxx" ./downloaded/ -p abcd
 bdpan download "https://pan.baidu.com/s/1xxxxx?pwd=abcd" ./downloaded/ -t my-folder
 ```
 
-**分享链接下载说明（v3.4.0+）：**
+**分享链接下载说明：**
 - 自动识别分享链接格式 `https://pan.baidu.com/s/1{surl}?pwd={pwd}`
 - 分享文件会先转存到 `/apps/bdpan/{日期}/` 目录（或使用 `-t` 指定的目录）
 - 然后下载到指定的本地路径
@@ -209,18 +209,6 @@ bdpan share --json report.pdf
 链接: https://pan.baidu.com/s/1xxxxxxx
 提取码: abcd
 有效期: 7 天
-```
-
-**分享功能说明：**
-- **服务要求**：分享功能需要购买百度网盘开放平台的付费服务
-- **适用场景**：企业用户、特定合作项目等已开通分享 API 的场景
-- **未开通时的处理**：如果未开通分享服务，会提示错误信息
-- **替代方案**：可手动在百度网盘网页端或客户端中分享文件
-
-**错误提示：**
-```
-错误: 分享接口为付费接口，请确认您的账户已开通相关服务
-Error: Share API requires paid service
 ```
 
 ---
@@ -350,7 +338,7 @@ PATH 配置建议:
 - 支持绝对路径: `/apps/bdpan/backup/data.tar.gz`
 - 路径穿越 `..` 会被自动阻止
 
-> **⛔ 双向路径映射规则：** 调用 bdpan 命令时，"我的应用数据" 必须转换为 `/apps`；向用户展示路径时，`/apps` 必须转换为 "我的应用数据"。详见 SKILL.md「路径规则」章节。
+> **⛔ 双向路径映射规则：** 调用 bdpan 命令时，"我的应用数据" 必须转换为 `/apps`；向用户展示路径时，`/apps` 必须转换为 "我的应用数据"。详见 [路径规则](../SKILL.md) 章节。
 
 ---
 
@@ -412,7 +400,6 @@ result = subprocess.run(
 | Token expired | Token 过期 | 重新登录 |
 | Path not allowed | 路径不在允许范围 | 使用 /apps/bdpan/ 下的路径 |
 | File not found | 文件不存在 | 检查路径是否正确 |
-| Share API not available | 分享接口未开通 | 购买百度网盘开放平台服务 |
 
 ---
 
@@ -421,4 +408,4 @@ result = subprocess.run(
 | 功能 | macOS | Linux | Windows |
 |------|-------|-------|---------|
 | 基础功能 | ✅ | ✅ | ✅ |
-| WebView 登录 | ✅ | - | - |
+| WebView 登录 | ✅ | - | ✅ |
