@@ -106,7 +106,6 @@ bdpan download "https://pan.baidu.com/s/1xxxxx?pwd=abcd" ./downloaded/ -t my-fol
 - 自动识别分享链接格式 `https://pan.baidu.com/s/1{surl}?pwd={pwd}`
 - 分享文件会先转存到 `/apps/bdpan/{日期}/` 目录（或使用 `-t` 指定的目录）
 - 然后下载到指定的本地路径
-- 需要分享 API 支持（付费服务）
 
 ### transfer - 转存分享文件到网盘（不下载到本地）
 

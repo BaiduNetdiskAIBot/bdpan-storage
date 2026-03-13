@@ -174,7 +174,6 @@ Error: Transfer failed
    bdpan transfer "https://pan.baidu.com/s/1xxxxx?pwd=abcd"
    ```
 3. **网盘空间不足**：清理网盘空间后重试
-4. **转存 API 未开通**：需要付费服务支持
 
 ### 权限不足
 

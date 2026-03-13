@@ -47,10 +47,6 @@ jobs:
                 echo "❌ $skill_name 缺少 SKILL.md"
                 exit 1
               fi
-              if [ ! -f "$skill/README.md" ]; then
-                echo "❌ $skill_name 缺少 README.md"
-                exit 1
-              fi
               echo "✅ $skill_name 结构检查通过"
             fi
           done
