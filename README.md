@@ -124,6 +124,46 @@ bdpan-storage 正在快速迭代中，我们期待每一位开发者、创作者
 
 > 每一个好产品的背后，都有一群愿意较真的用户。期待与你一起，把「一句话操作网盘」做到极致。
 
+## 📦 打包与分享
+
+### 本地打包
+
+```bash
+# 查看可用命令
+make help
+
+# 列出所有 skills
+make list
+
+# 打包指定 skill
+make pack SKILL=bdpan-storage
+
+# 打包所有 skills
+make pack-all
+
+# 清理打包输出
+make clean
+```
+
+### 自动发布
+
+推送 tag 后会**自动触发 GitHub Release**：
+
+```bash
+# 创建并推送 tag
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+工作流会自动：
+1. 打包所有 skills 为 zip 文件
+2. 生成发布说明
+3. 创建 GitHub Release 并上传资源
+
+支持 tag 格式：
+- `v*` — 如 `v1.0.0`
+- `skill-*` — 如 `skill-v1.0.0`
+
 ## 许可证
 
 [MIT License](./LICENSE)
