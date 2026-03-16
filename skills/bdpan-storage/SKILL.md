@@ -94,6 +94,12 @@ bdpan transfer <分享链接> -p <提取码> --json
 
 步骤：验证链接格式 → 确认有提取码 → 确认目标目录 → 执行转存
 
+**转存成功后的展示：**
+- 只展示本次转存的文件/文件夹（而非整个目录）
+- 显示转存数量和目标目录
+- 如转存的是单个文件，显示具体文件名
+- 如转存的是文件夹，显示文件夹名称和内部文件数
+
 ### 分享链接下载
 
 ```bash
@@ -143,12 +149,25 @@ bash scripts/login.sh
 bdpan logout
 ```
 
+### 卸载
+
+```bash
+bash scripts/uninstall.sh
+```
+
+完全卸载 bdpan CLI，包括：
+- 注销登录并清除授权信息
+- 删除配置目录（`~/.config/bdpan/`）
+- 删除 bdpan 二进制文件
+
+支持 `--yes` 参数跳过确认（自动化场景）。
+
 ### 版本管理
 
 ```bash
-bdpan update check                        # 检查更新
-bdpan update                              # 执行更新（需用户确认）
-bdpan update rollback                     # 回滚（需用户确认）
+bash scripts/update.sh                    # 检查并更新 Skill
+bash scripts/update.sh --check            # 仅检查更新，不执行
+bash scripts/update.sh --yes              # 跳过确认，自动更新
 ```
 
 ---

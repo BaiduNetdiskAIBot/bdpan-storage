@@ -17,7 +17,7 @@ Error: Token expired
 **解决方案：**
 ```bash
 bdpan logout
-bdpan login
+bash scripts/login.sh
 ```
 
 ### WebView 无法打开
@@ -57,7 +57,7 @@ https://openapi.baidu.com/oauth/2.0/authorize?response_type=device_code&client_i
 ```bash
 # 清除配置并重试
 rm ~/.config/bdpan/config.json
-bdpan login
+bash scripts/login.sh
 ```
 
 ---
@@ -174,6 +174,33 @@ Error: Transfer failed
    bdpan transfer "https://pan.baidu.com/s/1xxxxx?pwd=abcd"
    ```
 3. **网盘空间不足**：清理网盘空间后重试
+
+#### 错误码 errno=13045（自己的分享链接）
+
+**症状：**
+```
+转存失败: errno=13045, msg=prohibit transfer self share link
+```
+
+**原因：**
+这是您自己创建并分享的链接，文件已经在您的网盘中，无需再次转存。
+
+**处理方式：**
+- **不向用户展示错误**，直接告知文件已在网盘中
+- 使用 `bdpan ls` 查找并展示该文件
+- 如需要，可提供分享链接供他人使用
+
+示例回复：
+```
+✅ 文件已在您的网盘中！
+
+文件信息：
+- 文件名：example.pdf
+- 位置：我的应用数据/bdpan/example.pdf
+- 大小：1.2 MB
+
+无需转存，直接使用即可。
+```
 
 ### 权限不足
 
@@ -312,9 +339,11 @@ bdpan download --help
 ### 启用调试模式
 
 ```bash
-# 检查配置位置
+# 检查配置文件是否存在及权限
 ls -la ~/.config/bdpan/
 
-# 查看配置文件（如果存在）
-cat ~/.config/bdpan/config.json
+# 检查登录状态和 Token 有效期
+bdpan whoami
 ```
+
+> **⛔ 安全警告：** 切勿使用 `cat` 查看配置文件内容，配置文件中包含 access_token 等敏感凭据，打印到终端或对话中可能导致泄露。

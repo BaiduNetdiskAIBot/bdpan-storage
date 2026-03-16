@@ -2,12 +2,13 @@ name: Release Skills
 
 on:
   push:
-    tags:
-      - 'v*'      # 推送 v 开头的 tag 时触发，如 v1.0.0
-      - 'skill-*' # 或 skill- 开头的 tag，如 skill-v1.0.0
+    branches: [main]
+    paths:
+      - 'skills/*/VERSION'  # VERSION 文件变更时触发
+  workflow_dispatch:         # 支持手动触发
 
 permissions:
-  contents: write  # 允许创建 Release
+  contents: write
 
 jobs:
   release:
@@ -15,20 +16,40 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 需要完整历史来检查 tag 是否已存在
+
+      - name: Read version from VERSION file
+        id: version
+        run: |
+          VERSION=$(cat skills/bdpan-storage/VERSION | tr -d '[:space:]')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+          echo "📌 版本号: $VERSION"
+
+      - name: Check if tag already exists
+        id: check_tag
+        run: |
+          if git rev-parse "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Tag v${{ steps.version.outputs.version }} 已存在，跳过发布"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "✅ Tag v${{ steps.version.outputs.version }} 不存在，准备发布"
+          fi
 
       - name: Package Skills
+        if: steps.check_tag.outputs.exists == 'false'
         run: |
-          # 创建输出目录
+          VERSION="${{ steps.version.outputs.version }}"
           mkdir -p dist
 
-          # 查找所有 skills 并打包
           for skill_path in skills/*/; do
             if [ -d "$skill_path" ]; then
               skill_name=$(basename "$skill_path")
-              echo "📦 打包: $skill_name"
+              echo "📦 打包: $skill_name v$VERSION"
 
-              # 打包 skill，排除不需要的文件
-              (cd skills && zip -r "../dist/${skill_name}.zip" "$skill_name" \
+              (cd skills && zip -r "../dist/${skill_name}-${VERSION}.zip" "$skill_name" \
                 -x "*/.git/*" \
                 -x "*/.DS_Store" \
                 -x "*/node_modules/*" \
@@ -42,16 +63,23 @@ jobs:
                 -x "*.log" \
                 -x "*.tmp")
 
-              echo "✅ 完成: dist/${skill_name}.zip"
+              echo "✅ 完成: dist/${skill_name}-${VERSION}.zip"
             fi
           done
 
+      - name: Create tag
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          git tag "v${{ steps.version.outputs.version }}"
+          git push origin "v${{ steps.version.outputs.version }}"
+
       - name: Generate Release Notes
+        if: steps.check_tag.outputs.exists == 'false'
         id: release_notes
         run: |
-          # 生成发布说明
+          VERSION="${{ steps.version.outputs.version }}"
           echo "RELEASE_NOTES<<EOF" >> $GITHUB_OUTPUT
-          echo "## 📦 Skills 发布" >> $GITHUB_OUTPUT
+          echo "## 📦 Skills v${VERSION}" >> $GITHUB_OUTPUT
           echo "" >> $GITHUB_OUTPUT
           echo "### 包含的 Skills:" >> $GITHUB_OUTPUT
 
@@ -61,11 +89,10 @@ jobs:
               skill_file="${skill_path}/SKILL.md"
 
               if [ -f "$skill_file" ]; then
-                # 提取 description（从 frontmatter）
                 desc=$(grep "^description:" "$skill_file" | head -1 | sed 's/description: //' || echo "暂无描述")
-                echo "- **${skill_name}**: ${desc}" >> $GITHUB_OUTPUT
+                echo "- **${skill_name}** v${VERSION}: ${desc}" >> $GITHUB_OUTPUT
               else
-                echo "- **${skill_name}**" >> $GITHUB_OUTPUT
+                echo "- **${skill_name}** v${VERSION}" >> $GITHUB_OUTPUT
               fi
             fi
           done
@@ -73,26 +100,28 @@ jobs:
           echo "" >> $GITHUB_OUTPUT
           echo "### 安装方法:" >> $GITHUB_OUTPUT
           echo '```bash' >> $GITHUB_OUTPUT
-          echo '# 使用 npm 进行安装' >> $GITHUB_OUTPUT
-          echo 'npx skills add https://github.com/baidu-netdisk/bdpan-storage@bdpan-storage' >> $GITHUB_OUTPUT
+          echo "npx skills add https://github.com/BaiduNetdiskAIBot/bdpan-storage@bdpan-storage" >> $GITHUB_OUTPUT
           echo '```' >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create Release
+        if: steps.check_tag.outputs.exists == 'false'
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: v${{ steps.version.outputs.version }}
           body: ${{ steps.release_notes.outputs.RELEASE_NOTES }}
           files: dist/*.zip
           draft: false
-          prerelease: ${{ contains(github.ref, '-alpha') || contains(github.ref, '-beta') || contains(github.ref, '-rc') }}
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Summary
+        if: steps.check_tag.outputs.exists == 'false'
         run: |
-          echo "## 🎉 Release 创建成功!" >> $GITHUB_STEP_SUMMARY
+          echo "## 🎉 Release v${{ steps.version.outputs.version }} 创建成功!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Tag:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** v${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**包含的文件:**" >> $GITHUB_STEP_SUMMARY
           ls -lh dist/*.zip | awk '{print "- " $9 " (" $5 ")"}' >> $GITHUB_STEP_SUMMARY

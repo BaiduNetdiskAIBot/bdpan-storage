@@ -77,7 +77,7 @@ Error: Token expired
 **解决方案：**
 ```bash
 bdpan logout
-bdpan login
+bash scripts/login.sh
 ```
 
 ### 授权链接无效
@@ -85,7 +85,7 @@ bdpan login
 **症状：** 浏览器打开链接后提示链接无效
 
 **解决方案：**
-1. 重新执行 `bdpan login` 获取新的授权链接
+1. 重新执行 `bash scripts/login.sh` 获取新的授权链接
 2. 确保在链接有效期内完成授权（通常 10 分钟）
 
 ### 授权码输入后报错
@@ -95,7 +95,7 @@ bdpan login
 **解决方案：**
 1. 确保授权码复制完整，没有多余空格
 2. 检查浏览器中显示的授权码是否与输入的一致
-3. 如多次失败，重新执行 `bdpan login` 获取新授权码
+3. 如多次失败，重新执行 `bash scripts/login.sh` 获取新授权码
 
 ---
 

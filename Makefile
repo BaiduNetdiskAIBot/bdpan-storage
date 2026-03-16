@@ -54,21 +54,23 @@ pack:
 		exit 1; \
 	fi
 	@mkdir -p $(OUTPUT_DIR)
-	@if [ -f "$(OUTPUT_DIR)/$(SKILL).zip" ] && [ -z "$(OVERWRITE)" ]; then \
-		echo "$(YELLOW)⚠️  $(OUTPUT_DIR)/$(SKILL).zip 已存在$(NC)"; \
+	$(eval VERSION := $(shell cat $(SKILLS_DIR)/$(SKILL)/VERSION 2>/dev/null || echo "unknown"))
+	$(eval ZIP_NAME := $(SKILL)-$(VERSION).zip)
+	@if [ -f "$(OUTPUT_DIR)/$(ZIP_NAME)" ] && [ -z "$(OVERWRITE)" ]; then \
+		echo "$(YELLOW)⚠️  $(OUTPUT_DIR)/$(ZIP_NAME) 已存在$(NC)"; \
 		echo "使用 OVERWRITE=1 覆盖"; \
 		exit 1; \
 	fi
-	@echo "$(BLUE)📦 正在打包: $(SKILL)$(NC)"
-	@cd $(SKILLS_DIR) && zip -r "../$(OUTPUT_DIR)/$(SKILL).zip" "$(SKILL)" \
+	@echo "$(BLUE)📦 正在打包: $(SKILL) v$(VERSION)$(NC)"
+	@cd $(SKILLS_DIR) && zip -r "../$(OUTPUT_DIR)/$(ZIP_NAME)" "$(SKILL)" \
 		-x "*/.git/*" "*/.DS_Store" "*/node_modules/*" "*/__pycache__/*" \
 		-x "*/.env*" "*/.idea/*" "*/.vscode/*" "*/dist/*" "*/build/*" \
 		-x "*.pyc" "*.log" "*.tmp" "*.swp" -q
-	@echo "$(GREEN)✅ 打包成功: $(OUTPUT_DIR)/$(SKILL).zip$$(du -h $(OUTPUT_DIR)/$(SKILL).zip | cut -f1 | xargs -I {} echo ' ({}')$(NC)"
+	@echo "$(GREEN)✅ 打包成功: $(OUTPUT_DIR)/$(ZIP_NAME)$$(du -h $(OUTPUT_DIR)/$(ZIP_NAME) | cut -f1 | xargs -I {} echo ' ({}')$(NC)"
 	@echo ""
 	@echo "包内文件:"
-	@unzip -l "$(OUTPUT_DIR)/$(SKILL).zip" | tail -n +4 | grep -v "^$$" | grep -v "^--------" | awk '{print "  " $$4}' | head -15
-	@file_count=$$(unzip -l "$(OUTPUT_DIR)/$(SKILL).zip" | grep -c "^.*[0-9].*$(SKILL)" || echo 0); \
+	@unzip -l "$(OUTPUT_DIR)/$(ZIP_NAME)" | tail -n +4 | grep -v "^$$" | grep -v "^--------" | awk '{print "  " $$4}' | head -15
+	@file_count=$$(unzip -l "$(OUTPUT_DIR)/$(ZIP_NAME)" | grep -c "^.*[0-9].*$(SKILL)" || echo 0); \
 	if [ "$$file_count" -gt 15 ]; then \
 		echo "  ... 还有 $$(($$file_count - 15)) 个文件"; \
 	fi

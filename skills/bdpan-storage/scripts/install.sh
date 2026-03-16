@@ -6,6 +6,7 @@ set -e
 
 VERSION="3.2.0"
 CDN_BASE="https://issuecdn.baidupcs.com/issue/netdisk/ai-bdpan/installer/${VERSION}"
+CHECKSUM_URL="${CDN_BASE}/SHA256SUMS"
 
 # 颜色输出
 RED='\033[0;31m'
@@ -181,6 +182,52 @@ main() {
     # 添加执行权限（非 Windows）
     if [ "$os" != "windows" ]; then
         chmod +x "${installer_name}"
+    fi
+
+    # SHA256 完整性校验
+    log_info "正在验证安装器完整性..."
+    local checksum_file="SHA256SUMS"
+    local checksum_ok="no"
+
+    # 下载 checksum 文件
+    if command -v curl &> /dev/null; then
+        curl -fsSL -o "${checksum_file}" "${CHECKSUM_URL}" 2>/dev/null || true
+    elif command -v wget &> /dev/null; then
+        wget -q -O "${checksum_file}" "${CHECKSUM_URL}" 2>/dev/null || true
+    fi
+
+    if [ -f "${checksum_file}" ]; then
+        # 提取对应安装器的期望 hash
+        local expected_hash=$(grep "${installer_name}" "${checksum_file}" | awk '{print $1}')
+        if [ -n "$expected_hash" ]; then
+            # 计算实际 hash（兼容 macOS 和 Linux）
+            local actual_hash=""
+            if command -v sha256sum &> /dev/null; then
+                actual_hash=$(sha256sum "${installer_name}" | awk '{print $1}')
+            elif command -v shasum &> /dev/null; then
+                actual_hash=$(shasum -a 256 "${installer_name}" | awk '{print $1}')
+            fi
+
+            if [ -n "$actual_hash" ]; then
+                if [ "$actual_hash" = "$expected_hash" ]; then
+                    log_info "✓ SHA256 校验通过"
+                    checksum_ok="yes"
+                else
+                    log_error "SHA256 校验失败！安装器可能被篡改"
+                    log_error "  期望: ${expected_hash}"
+                    log_error "  实际: ${actual_hash}"
+                    rm -f "${installer_name}" "${checksum_file}"
+                    exit 1
+                fi
+            else
+                log_warn "未找到 sha256sum/shasum 工具，跳过完整性校验"
+            fi
+        else
+            log_warn "SHA256SUMS 中未找到 ${installer_name} 的记录，跳过校验"
+        fi
+        rm -f "${checksum_file}"
+    else
+        log_warn "未能下载 SHA256SUMS 校验文件，跳过完整性校验"
     fi
 
     log_info "安装器下载完成，开始安装..."
