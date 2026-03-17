@@ -4,11 +4,13 @@
 
 ### login - 登录授权
 
+> **⛔ Agent 必须通过 `bash scripts/login.sh` 脚本执行登录，禁止直接调用 `bdpan login`。**
+
 ```bash
-bdpan login
+bash scripts/login.sh
 ```
 
-桌面环境下（macOS）将自动弹出 WebView 授权窗口，完成登录后自动关闭。无 GUI 环境（如 SSH 远程登录）会自动切换到手动输入模式。
+脚本内置了安全免责声明和完整的 OOB 授权流程。无论 GUI 或非 GUI 环境，统一使用此脚本。
 
 ### logout - 注销登录
 
@@ -17,6 +19,26 @@ bdpan logout
 ```
 
 清除本地存储的认证信息（`~/.config/bdpan/config.json`）。
+
+### uninstall - 完全卸载
+
+```bash
+bash scripts/uninstall.sh
+```
+
+完全卸载 bdpan CLI，自动执行以下操作：
+1. 注销登录并清除授权信息
+2. 删除配置目录（`~/.config/bdpan/`）
+3. 删除 bdpan 二进制文件（`~/.local/bin/bdpan`）
+
+**选项：**
+- `--yes, -y` - 跳过确认提示（自动化场景）
+
+**环境变量：**
+| 环境变量 | 说明 | 默认值 |
+|---------|------|--------|
+| `BDPAN_INSTALL_DIR` | 二进制安装目录 | `~/.local/bin` |
+| `BDPAN_CONFIG_DIR` | 配置文件目录 | `~/.config/bdpan` |
 
 ### whoami - 查看认证状态
 
@@ -214,19 +236,33 @@ bdpan share --json report.pdf
 
 ## 版本管理命令
 
-### update - 检查/更新版本
+### update - 自动更新 Skill
+
+> **使用 `bash scripts/update.sh` 更新 Skill 文件。CLI 更新由 `bdpan` 自身管理。**
 
 ```bash
-# 手动检查更新
-bdpan update check
+# 检查并更新（交互式，需用户确认）
+bash scripts/update.sh
 
-# 自动更新到最新版本
-bdpan update
+# 仅检查更新，不执行
+bash scripts/update.sh --check
+
+# 跳过确认，自动更新（自动化场景）
+bash scripts/update.sh --yes
 ```
 
-**说明：**
-- CLI 启动时会自动检查更新
-- 发现新版本会显示提示
+**功能说明：**
+- 通过百度配置接口获取最新 Skill 版本信息
+- 对比本地 VERSION 文件判断是否需要更新
+- 下载 zip 包并解压覆盖，更新 VERSION 文件
+- 支持 SHA256 完整性校验（如配置中包含 checksum）
+
+**选项：**
+| 选项 | 说明 |
+|------|------|
+| `--check, -c` | 仅检查更新，不执行安装 |
+| `--yes, -y` | 跳过用户确认，自动执行更新 |
+| `--help` | 显示帮助信息 |
 
 ### version - 查看版本信息
 
@@ -280,30 +316,52 @@ PATH 配置建议:
 ```json
 [
   {
-    "Name": "report.pdf",
-    "IsDir": false,
-    "Size": 1536000,
-    "Modified": "2026-02-25T15:20:00Z"
+    "fs_id": 524080722157776,
+    "path": "我的应用数据/report.pdf",
+    "server_filename": "report.pdf",
+    "size": 1536000,
+    "isdir": false,
+    "md5": "a1b2c3d4e5f6...",
+    "server_mtime": "2026-02-25T15:20:00+08:00",
+    "server_ctime": "2026-02-25T14:00:00+08:00"
   },
   {
-    "Name": "documents",
-    "IsDir": true,
-    "Size": 0,
-    "Modified": "2026-02-20T10:30:00Z"
+    "fs_id": 841873986109404,
+    "path": "我的应用数据/documents",
+    "server_filename": "documents",
+    "size": 0,
+    "isdir": true,
+    "md5": "",
+    "server_mtime": "2026-02-20T10:30:00+08:00",
+    "server_ctime": "2026-02-20T09:00:00+08:00"
   }
 ]
 ```
+
+**字段说明：**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `fs_id` | number | 文件唯一 ID |
+| `path` | string | 文件路径（中文显示名，如 `我的应用数据/...`） |
+| `server_filename` | string | 文件名 |
+| `size` | number | 文件大小（字节），目录为 0 |
+| `isdir` | boolean | 是否为目录（`true`/`false`，注意是小写布尔值） |
+| `md5` | string | 文件 MD5 值，目录为空字符串 |
+| `server_mtime` | string | 服务端修改时间（ISO 8601 带时区） |
+| `server_ctime` | string | 服务端创建时间（ISO 8601 带时区） |
+
+> **注意：** `path` 字段返回中文显示名（`我的应用数据/...`），不是 API 路径（`/apps/bdpan/...`）。展示给用户时可直接使用此路径。
 
 ### share 命令输出
 
 ```json
 {
   "link": "https://pan.baidu.com/s/1xxxxxxx",
-  "pwd": "abcd",
-  "period": 604800,
-  "short_url": "https://pan.baidu.com/s/1xxxxxxx",
-  "share_id": "xxxxxxx",
-  "path": "/apps/bdpan/report.pdf"
+  "short_url": "xxxxxxx",
+  "share_id": 25747091668,
+  "period": 7,
+  "pwd": "abcd"
 }
 ```
 
@@ -399,6 +457,7 @@ result = subprocess.run(
 | Token expired | Token 过期 | 重新登录 |
 | Path not allowed | 路径不在允许范围 | 使用 /apps/bdpan/ 下的路径 |
 | File not found | 文件不存在 | 检查路径是否正确 |
+| errno=13045 | 自己的分享链接 | 文件已在网盘中，直接使用 `bdpan ls` 查找 |
 
 ---
 

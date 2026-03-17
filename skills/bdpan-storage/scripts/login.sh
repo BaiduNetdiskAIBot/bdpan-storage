@@ -161,8 +161,17 @@ log_info "正在使用授权码完成登录..."
 
 # 检查是否支持 --set-code 参数
 if bdpan login --help 2>/dev/null | grep -q "set-code"; then
-    bdpan login --set-code "$AUTH_CODE"
+    # 安全: 优先通过 stdin 传递授权码，避免在 /proc/PID/cmdline 和 ps 中泄露
+    if bdpan login --help 2>/dev/null | grep -q "set-code-stdin"; then
+        echo "$AUTH_CODE" | bdpan login --set-code-stdin
+    else
+        # 降级: 通过命令行参数传递（授权码为一次性使用，窗口极短）
+        bdpan login --set-code "$AUTH_CODE"
+    fi
+    # 立即清除内存中的授权码
+    unset AUTH_CODE
 else
+    unset AUTH_CODE
     log_error "当前版本不支持 --set-code"
     log_error "当前 bdpan 版本: ${BDPAN_VERSION}"
     log_error "请升级到支持 --set-code 的 bdpan 版本（>= 3.0.0）"
