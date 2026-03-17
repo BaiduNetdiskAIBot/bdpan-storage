@@ -100,7 +100,7 @@ jobs:
           echo "" >> $GITHUB_OUTPUT
           echo "### 安装方法:" >> $GITHUB_OUTPUT
           echo '```bash' >> $GITHUB_OUTPUT
-          echo "npx skills add https://github.com/BaiduNetdiskAIBot/bdpan-storage@bdpan-storage" >> $GITHUB_OUTPUT
+          echo "npx skills add https://github.com/baidu-netdisk/bdpan-storage/skills --skill bdpan-storage" >> $GITHUB_OUTPUT
           echo '```' >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
