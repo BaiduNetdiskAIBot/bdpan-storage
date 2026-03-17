@@ -53,10 +53,10 @@ docs(readme): update installation instructions
 
 新增 Skill 需要：
 
-1. 按照目录结构规范放置在 `skills/<category>/<skill-name>/`
-2. 包含 `SKILL.md`（Skill 定义）和 `README.md`（说明文档）
-3. README.md 需包含：简介、功能特性、输入/输出、快速开始、配置项、注意事项
-4. 附带使用示例和参考文档
+1. 按照目录结构规范放置在 `skills/<skill-name>/`
+2. 包含 `SKILL.md`（Skill 定义文件，必需）
+3. SKILL.md 需包含：简介、功能特性、触发规则、核心功能、参考文档
+4. 附带使用示例和参考文档（放置在 `reference/` 子目录下）
 
 ## 安全要求
 

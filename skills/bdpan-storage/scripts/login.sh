@@ -166,6 +166,8 @@ if bdpan login --help 2>/dev/null | grep -q "set-code"; then
         echo "$AUTH_CODE" | bdpan login --set-code-stdin
     else
         # 降级: 通过命令行参数传递（授权码为一次性使用，窗口极短）
+        log_warn "当前 bdpan 版本不支持 stdin 传递授权码，使用命令行参数传递"
+        log_warn "建议升级到最新版本以获得更安全的授权码传递方式: bash scripts/install.sh --force"
         bdpan login --set-code "$AUTH_CODE"
     fi
     # 立即清除内存中的授权码

@@ -270,7 +270,7 @@ main() {
         echo ""
 
         echo "快速开始:"
-        echo "  1. 执行登录: bdpan login"
+        echo "  1. 执行登录: bash scripts/login.sh"
         echo "  2. 查看帮助: bdpan --help"
         echo ""
     else
