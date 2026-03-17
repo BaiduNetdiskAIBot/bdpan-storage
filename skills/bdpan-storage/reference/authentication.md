@@ -97,6 +97,8 @@ bash scripts/login.sh
 2. 检查浏览器中显示的授权码是否与输入的一致
 3. 如多次失败，重新执行 `bash scripts/login.sh` 获取新授权码
 
+> **⛔ 注意：** 以上所有登录操作必须通过 `bash scripts/login.sh` 脚本执行，禁止直接使用 `bdpan login`。
+
 ---
 
 ## 配置文件位置

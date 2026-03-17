@@ -463,7 +463,7 @@ result = subprocess.run(
 
 ## 平台支持
 
-| 功能 | macOS | Linux | Windows |
-|------|-------|-------|---------|
+| 功能 | macOS | Linux | Windows (WSL) |
+|------|-------|-------|---------------|
 | 基础功能 | ✅ | ✅ | ✅ |
-| WebView 登录 | ✅ | - | ✅ |
+| WebView 登录 | ✅ | - | -（WSL 无图形界面，使用 OOB 模式） |

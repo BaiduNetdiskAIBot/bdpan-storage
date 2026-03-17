@@ -149,27 +149,19 @@ bdpan ls --json | jq -e '.[] | select(.Name == "target.txt")'
 
 ## 认证流程
 
-### 示例 10: 登录（GUI 环境）
+### 示例 10: 登录（统一使用 login.sh 脚本）
+
+> **⛔ 禁止直接调用 `bdpan login`，必须使用 `bash scripts/login.sh` 脚本。**
 
 ```
 用户: 帮我登录百度网盘
 AI: [执行 bash scripts/login.sh]
 
-    正在启动授权流程...
-    请在浏览器中打开以下链接完成授权:
-    https://openapi.baidu.com/oauth/...
+    [展示安全免责声明]
+    已阅读上述安全须知，确认继续登录? [y/N]
 
-    ✓ 登录成功！
-    用户: username@baidu.com
-```
-
-### 示例 11: 登录（非 GUI 环境）
-
-```
-用户: 帮我登录百度网盘
-AI: [执行 bash scripts/login.sh]
-
-    正在启动授权流程...
+用户: y
+AI: 正在获取授权链接...
 
     请在浏览器中打开以下链接完成授权:
     https://openapi.baidu.com/oauth/2.0/authorize?...
@@ -177,7 +169,7 @@ AI: [执行 bash scripts/login.sh]
     授权成功后，浏览器会显示授权码，请复制并粘贴到这里:
     [等待用户输入...]
 
-用户: [粘贴授权码] abc123xyz...
+用户: [粘贴授权码] ca0ee3070f75d0246357e5c74d525bda
 AI: [处理授权码]
 
     ✓ 登录成功！

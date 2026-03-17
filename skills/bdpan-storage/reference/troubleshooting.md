@@ -20,6 +20,8 @@ bdpan logout
 bash scripts/login.sh
 ```
 
+> **⛔ 注意：** 禁止直接使用 `bdpan login`，必须通过 `bash scripts/login.sh` 脚本执行登录。
+
 ### WebView 无法打开
 
 **症状：** 登录过程中浏览器或 WebView 窗口未出现。
@@ -59,6 +61,8 @@ https://openapi.baidu.com/oauth/2.0/authorize?response_type=device_code&client_i
 rm ~/.config/bdpan/config.json
 bash scripts/login.sh
 ```
+
+> **⛔ 注意：** 禁止直接使用 `bdpan login`，必须通过 `bash scripts/login.sh` 脚本执行登录。
 
 ---
 
