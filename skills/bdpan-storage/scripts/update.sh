@@ -56,10 +56,16 @@ version_compare() {
     return 1
 }
 
+# 去除版本号的 v 前缀（如 v1.2.0 → 1.2.0）
+strip_v_prefix() {
+    echo "$1" | sed 's/^v//'
+}
+
 # 获取本地 Skill 版本
 get_local_version() {
     if [ -f "$VERSION_FILE" ]; then
-        cat "$VERSION_FILE" | tr -d '[:space:]'
+        local raw=$(cat "$VERSION_FILE" | tr -d '[:space:]')
+        strip_v_prefix "$raw"
     else
         echo "unknown"
     fi
@@ -234,8 +240,9 @@ main() {
         exit 1
     }
 
-    # 解析远程版本和下载地址
+    # 解析远程版本和下载地址（strip v 前缀用于比较）
     local remote_version=$(query_get "$SKILLS_INFO" "version")
+    local remote_version_clean=$(strip_v_prefix "$remote_version")
     local remote_url=$(query_get "$SKILLS_INFO" "url")
 
     if [ -z "$remote_version" ]; then
@@ -259,7 +266,7 @@ main() {
         needs_update="yes"
     else
         set +e
-        version_compare "$remote_version" "$local_version"
+        version_compare "$remote_version_clean" "$local_version"
         local cmp_result=$?
         set -e
 

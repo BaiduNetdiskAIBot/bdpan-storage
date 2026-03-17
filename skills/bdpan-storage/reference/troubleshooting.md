@@ -231,7 +231,7 @@ Error: Permission denied
 **解决方案：**
 ```bash
 # 重新运行安装脚本
-cd skills/tool/bdpan-storage
+cd skills/bdpan-storage
 bash scripts/install.sh
 
 # 或者检查 ~/.local/bin 是否在 PATH 中
@@ -251,7 +251,7 @@ export PATH="$HOME/.local/bin:$PATH"
 rm ~/.local/bin/bdpan
 
 # 重新安装
-cd skills/tool/bdpan-storage
+cd skills/bdpan-storage
 bash scripts/install.sh
 ```
 

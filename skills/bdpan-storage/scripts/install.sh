@@ -243,6 +243,11 @@ main() {
     if command -v bdpan &> /dev/null; then
         local installed_version=$(bdpan version 2>/dev/null | head -1 || echo "unknown")
         log_info "✓ bdpan CLI 安装成功！(版本: ${installed_version})"
+
+        # 注册到版本管理系统，使 bdpan update 能正常工作
+        log_info "注册到版本管理系统..."
+        bdpan install --force 2>/dev/null || log_warn "版本注册跳过（不影响使用）"
+
         echo ""
 
         # 安全免责声明

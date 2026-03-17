@@ -316,30 +316,52 @@ PATH 配置建议:
 ```json
 [
   {
-    "Name": "report.pdf",
-    "IsDir": false,
-    "Size": 1536000,
-    "Modified": "2026-02-25T15:20:00Z"
+    "fs_id": 524080722157776,
+    "path": "我的应用数据/report.pdf",
+    "server_filename": "report.pdf",
+    "size": 1536000,
+    "isdir": false,
+    "md5": "a1b2c3d4e5f6...",
+    "server_mtime": "2026-02-25T15:20:00+08:00",
+    "server_ctime": "2026-02-25T14:00:00+08:00"
   },
   {
-    "Name": "documents",
-    "IsDir": true,
-    "Size": 0,
-    "Modified": "2026-02-20T10:30:00Z"
+    "fs_id": 841873986109404,
+    "path": "我的应用数据/documents",
+    "server_filename": "documents",
+    "size": 0,
+    "isdir": true,
+    "md5": "",
+    "server_mtime": "2026-02-20T10:30:00+08:00",
+    "server_ctime": "2026-02-20T09:00:00+08:00"
   }
 ]
 ```
+
+**字段说明：**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `fs_id` | number | 文件唯一 ID |
+| `path` | string | 文件路径（中文显示名，如 `我的应用数据/...`） |
+| `server_filename` | string | 文件名 |
+| `size` | number | 文件大小（字节），目录为 0 |
+| `isdir` | boolean | 是否为目录（`true`/`false`，注意是小写布尔值） |
+| `md5` | string | 文件 MD5 值，目录为空字符串 |
+| `server_mtime` | string | 服务端修改时间（ISO 8601 带时区） |
+| `server_ctime` | string | 服务端创建时间（ISO 8601 带时区） |
+
+> **注意：** `path` 字段返回中文显示名（`我的应用数据/...`），不是 API 路径（`/apps/bdpan/...`）。展示给用户时可直接使用此路径。
 
 ### share 命令输出
 
 ```json
 {
   "link": "https://pan.baidu.com/s/1xxxxxxx",
-  "pwd": "abcd",
-  "period": 604800,
-  "short_url": "https://pan.baidu.com/s/1xxxxxxx",
-  "share_id": "xxxxxxx",
-  "path": "/apps/bdpan/report.pdf"
+  "short_url": "xxxxxxx",
+  "share_id": 25747091668,
+  "period": 7,
+  "pwd": "abcd"
 }
 ```
 
