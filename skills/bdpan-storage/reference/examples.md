@@ -215,6 +215,91 @@ bdpan transfer "https://pan.baidu.com/s/1xxxxx?pwd=abcd" --json
 
 ---
 
+## 搜索文件
+
+### 示例 18: 搜索文件
+
+```
+用户: 在网盘里搜索 report
+AI: [执行 bdpan search report]
+
+    找到 3 个结果（第 1 页，共 1 页）
+
+    #   名称              类型    大小      修改时间
+    --- ----------------- ------- --------- ----------------
+    1   report.pdf        文档    1.5 MB    2026-02-25 15:20
+    2   report-draft.docx 文档    256 KB    2026-02-24 09:15
+    3   report-backup     目录    -         2026-02-20 10:30
+```
+
+### 示例 19: 按类型搜索
+
+```
+用户: 搜索网盘里所有的图片文件
+AI: [执行 bdpan search "" --category 3 --no-dir]
+
+    找到 5 个结果（第 1 页，共 1 页）
+
+    #   名称              类型    大小      修改时间
+    --- ----------------- ------- --------- ----------------
+    1   photo.jpg         图片    3.2 MB    2026-03-15 14:30
+    2   screenshot.png    图片    1.1 MB    2026-03-10 09:20
+    ...
+```
+
+---
+
+## 文件管理（移动/复制/重命名/创建文件夹）
+
+### 示例 20: 移动文件
+
+```
+用户: 把网盘里的 report.pdf 移动到 backup 目录
+AI: [执行 bdpan mv report.pdf backup]
+
+    已移动 report.pdf -> backup
+```
+
+### 示例 21: 复制文件
+
+```
+用户: 复制 report.pdf 到 archive 目录
+AI: [执行 bdpan cp report.pdf archive]
+
+    已复制 report.pdf -> archive
+```
+
+### 示例 22: 重命名文件
+
+```
+用户: 把 draft.pdf 重命名为 final-report.pdf
+AI: [执行 bdpan rename draft.pdf final-report.pdf]
+
+    已重命名 draft.pdf -> final-report.pdf
+```
+
+### 示例 23: 创建文件夹
+
+```
+用户: 在网盘里创建一个 projects 文件夹
+AI: [执行 bdpan mkdir projects]
+
+    已创建文件夹: projects
+```
+
+### 示例 24: 组合操作——创建目录并移动文件
+
+```
+用户: 帮我在网盘里创建一个 archive/2026 目录，然后把 old-report.pdf 移动过去
+AI: [执行 bdpan mkdir archive/2026]
+    已创建文件夹: archive/2026
+
+    [执行 bdpan mv old-report.pdf archive/2026]
+    已移动 old-report.pdf -> archive/2026
+```
+
+---
+
 ## 高级用法
 
 ### 示例 12: 批量上传

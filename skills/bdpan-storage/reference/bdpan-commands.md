@@ -232,6 +232,169 @@ bdpan share --json report.pdf
 有效期: 7 天
 ```
 
+### search - 搜索文件
+
+```bash
+bdpan search <关键词> [选项]
+```
+
+| 参数 | 说明 |
+|------|------|
+| `关键词` | 搜索关键词（必填） |
+
+**选项：**
+| 选项 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `--category` | int | `0` | 文件类型筛选：1=视频, 2=音频, 3=图片, 4=文档, 5=应用, 6=其他, 7=种子 |
+| `--page-size` | int | `5` | 每页数量（最大 50） |
+| `--page` | int | `1` | 页码 |
+| `--no-dir` | bool | `false` | 仅显示文件，排除文件夹 |
+| `--dir-only` | bool | `false` | 仅显示文件夹 |
+| `--json` | - | - | JSON 格式输出 |
+
+> `--no-dir` 和 `--dir-only` 互斥，不能同时使用。
+
+**示例：**
+```bash
+# 搜索文件
+bdpan search report
+
+# 搜索图片类型文件
+bdpan search photo --category 3
+
+# 搜索文件，排除文件夹，每页 10 条
+bdpan search data --no-dir --page-size 10
+
+# 翻页
+bdpan search report --page 2
+
+# JSON 输出
+bdpan search report --json
+```
+
+**输出格式：**
+```
+找到 15 个结果（第 1 页，共 3 页）
+
+#   名称              类型    大小      修改时间
+--- ----------------- ------- --------- ----------------
+1   report.pdf        文档    1.5 MB    2026-02-25 15:20
+2   report-draft.docx 文档    256 KB    2026-02-24 09:15
+
+提示: 使用 --page 2 查看下一页
+```
+
+### mv - 移动文件或文件夹
+
+```bash
+bdpan mv <源路径> <目标目录>
+```
+
+| 参数 | 说明 |
+|------|------|
+| `源路径` | 要移动的文件或文件夹路径（相对于 `/apps/bdpan/`） |
+| `目标目录` | 目标目录路径（相对于 `/apps/bdpan/`） |
+
+**示例：**
+```bash
+# 移动文件到子目录
+bdpan mv report.pdf backup
+
+# 移动文件夹
+bdpan mv old-project archive
+
+# JSON 输出
+bdpan mv report.pdf backup --json
+```
+
+**输出格式：**
+```
+已移动 report.pdf -> backup
+```
+
+### cp - 复制文件或文件夹
+
+```bash
+bdpan cp <源路径> <目标目录>
+```
+
+| 参数 | 说明 |
+|------|------|
+| `源路径` | 要复制的文件或文件夹路径（相对于 `/apps/bdpan/`） |
+| `目标目录` | 目标目录路径（相对于 `/apps/bdpan/`） |
+
+**示例：**
+```bash
+# 复制文件到子目录
+bdpan cp report.pdf backup
+
+# 复制文件夹
+bdpan cp project project-copy
+
+# JSON 输出
+bdpan cp report.pdf backup --json
+```
+
+**输出格式：**
+```
+已复制 report.pdf -> backup
+```
+
+### rename - 重命名文件或文件夹
+
+```bash
+bdpan rename <路径> <新名称>
+```
+
+| 参数 | 说明 |
+|------|------|
+| `路径` | 要重命名的文件或文件夹路径（相对于 `/apps/bdpan/`） |
+| `新名称` | 新文件名（仅名称，不含路径） |
+
+**示例：**
+```bash
+# 重命名文件
+bdpan rename old-name.pdf new-name.pdf
+
+# 重命名子目录中的文件
+bdpan rename docs/draft.md final.md
+
+# JSON 输出
+bdpan rename old-name.pdf new-name.pdf --json
+```
+
+**输出格式：**
+```
+已重命名 old-name.pdf -> new-name.pdf
+```
+
+### mkdir - 创建文件夹
+
+```bash
+bdpan mkdir <路径>
+```
+
+| 参数 | 说明 |
+|------|------|
+| `路径` | 要创建的文件夹路径（相对于 `/apps/bdpan/`） |
+
+**示例：**
+```bash
+# 创建文件夹
+bdpan mkdir backup
+
+# 创建多级目录
+bdpan mkdir backup/2026/03
+
+# JSON 输出
+bdpan mkdir backup --json
+```
+
+**输出格式：**
+```
+已创建文件夹: backup
+```
+
 ---
 
 ## 版本管理命令
@@ -383,6 +546,35 @@ PATH 配置建议:
   "remote_path": "my-folder/shared-file.pdf",
   "share_link": "https://pan.baidu.com/s/1xxxxx",
   "file_count": 1
+}
+```
+
+### search 命令输出
+
+```json
+{
+  "total": 15,
+  "page": 1,
+  "page_size": 5,
+  "results": [
+    {
+      "fs_id": 524080722157776,
+      "path": "我的应用数据/bdpan/report.pdf",
+      "server_filename": "report.pdf",
+      "size": 1536000,
+      "isdir": false,
+      "category": 4,
+      "server_mtime": "2026-02-25T15:20:00+08:00"
+    }
+  ]
+}
+```
+
+### mv/cp/rename/mkdir 命令输出
+
+```json
+{
+  "status": "ok"
 }
 ```
 
