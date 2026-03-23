@@ -153,28 +153,30 @@ do_update() {
         }
     fi
 
-    # 如果配置了 checksum 则校验
+    # SHA256 完整性校验（强制）
     local checksum=$(query_get "$SKILLS_INFO" "checksum")
-    if [ -n "$checksum" ]; then
-        local actual=""
-        if command -v sha256sum &> /dev/null; then
-            actual=$(sha256sum "$zip_path" | awk '{print $1}')
-        elif command -v shasum &> /dev/null; then
-            actual=$(shasum -a 256 "$zip_path" | awk '{print $1}')
-        fi
-
-        if [ -n "$actual" ]; then
-            if [ "$actual" != "$checksum" ]; then
-                log_error "SHA256 校验失败！文件可能被篡改"
-                log_error "  期望: ${checksum}"
-                log_error "  实际: ${actual}"
-                return 1
-            fi
-            log_info "SHA256 校验通过"
-        else
-            log_warn "未找到 sha256sum/shasum 工具，跳过校验"
-        fi
+    if [ -z "$checksum" ]; then
+        log_error "配置接口未提供 checksum，无法验证更新包完整性，拒绝更新"
+        return 1
     fi
+
+    local actual=""
+    if command -v sha256sum &> /dev/null; then
+        actual=$(sha256sum "$zip_path" | awk '{print $1}')
+    elif command -v shasum &> /dev/null; then
+        actual=$(shasum -a 256 "$zip_path" | awk '{print $1}')
+    else
+        log_error "未找到 sha256sum/shasum 工具，无法验证更新包完整性"
+        return 1
+    fi
+
+    if [ "$actual" != "$checksum" ]; then
+        log_error "SHA256 校验失败！文件可能被篡改"
+        log_error "  期望: ${checksum}"
+        log_error "  实际: ${actual}"
+        return 1
+    fi
+    log_info "SHA256 校验通过"
 
     # 解压覆盖
     log_info "正在解压更新..."
