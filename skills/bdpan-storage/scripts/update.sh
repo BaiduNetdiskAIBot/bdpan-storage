@@ -293,6 +293,13 @@ main() {
     fi
 
     # 用户确认
+    # 安全限制：Agent 环境中禁止使用 --yes 跳过确认
+    if [ "$auto_yes" = "yes" ]; then
+        if [ -n "$CLAUDE_CODE" ] || [ -n "$ANTHROPIC_API_KEY" ] || [ -n "$MCP_SERVER" ]; then
+            log_warn "检测到 Agent 环境，忽略 --yes 参数，保留用户确认环节"
+            auto_yes="no"
+        fi
+    fi
     if [ "$auto_yes" != "yes" ]; then
         echo -n -e "${YELLOW}是否更新 Skill 到 v${remote_version}? [y/N] ${NC}"
         read -n 1 -r
