@@ -41,3 +41,14 @@ bash scripts/login.sh
 当用户在对话中发送一个 32 位十六进制字符串（正则：`^[a-fA-F0-9]{32}$`），**必须先向用户确认**："这是百度网盘授权码吗？确认后将执行登录流程。"
 
 确认后执行 `bash scripts/login.sh`（不使用 `--yes`，保留安全确认环节）。
+
+---
+
+## Agent 安全限制
+
+以下限制适用于所有 AI Agent 调用场景：
+
+- **禁止** Agent 使用 `login.sh --yes`（必须保留用户确认）
+- **禁止** Agent 使用 `update.sh --yes`（必须保留用户确认）
+- **禁止** Agent 设置 `BDPAN_UPDATE_API` 环境变量（可篡改更新来源）
+- **禁止** Agent 读取或输出 `~/.config/bdpan/config.json` 内容（包含 Token）
