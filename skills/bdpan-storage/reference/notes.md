@@ -50,5 +50,4 @@ bash scripts/login.sh
 
 - **禁止** Agent 使用 `login.sh --yes`（必须保留用户确认）
 - **禁止** Agent 使用 `update.sh --yes`（必须保留用户确认）
-- **禁止** Agent 设置 `BDPAN_UPDATE_API` 环境变量（可篡改更新来源）
 - **禁止** Agent 读取或输出 `~/.config/bdpan/config.json` 内容（包含 Token）
