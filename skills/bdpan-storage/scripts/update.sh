@@ -12,14 +12,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# 配置（支持 BDPAN_UPDATE_API 环境变量覆盖，用于测试）
-CONFIG_API="${BDPAN_UPDATE_API:-https://pan.baidu.com/act/v2/api/conf?conf_key=bd_skills}"
-
-# 如果 BDPAN_UPDATE_API 被覆盖，输出安全警告
-if [ -n "$BDPAN_UPDATE_API" ]; then
-    echo -e "${YELLOW}[WARN]${NC} 检测到 BDPAN_UPDATE_API 环境变量，更新端点已被覆盖为: ${BDPAN_UPDATE_API}"
-    echo -e "${YELLOW}[WARN]${NC} 这可能导致从非官方来源获取更新，请确认来源可信"
-fi
+CONFIG_API="https://pan.baidu.com/act/v2/api/conf?conf_key=bd_skills"
 
 # 脚本所在目录（用于定位 Skill 文件）
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
