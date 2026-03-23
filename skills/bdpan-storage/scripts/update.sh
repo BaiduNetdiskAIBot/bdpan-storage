@@ -12,8 +12,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# 配置（支持 BDPAN_UPDATE_API 环境变量覆盖，用于测试）
-CONFIG_API="${BDPAN_UPDATE_API:-https://pan.baidu.com/act/v2/api/conf?conf_key=bd_skills}"
+CONFIG_API="https://pan.baidu.com/act/v2/api/conf?conf_key=bd_skills"
 
 # 脚本所在目录（用于定位 Skill 文件）
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -294,6 +293,13 @@ main() {
     fi
 
     # 用户确认
+    # 安全限制：Agent 环境中禁止使用 --yes 跳过确认
+    if [ "$auto_yes" = "yes" ]; then
+        if [ -n "$CLAUDE_CODE" ] || [ -n "$ANTHROPIC_API_KEY" ] || [ -n "$MCP_SERVER" ]; then
+            log_warn "检测到 Agent 环境，忽略 --yes 参数，保留用户确认环节"
+            auto_yes="no"
+        fi
+    fi
     if [ "$auto_yes" != "yes" ]; then
         echo -n -e "${YELLOW}是否更新 Skill 到 v${remote_version}? [y/N] ${NC}"
         read -n 1 -r

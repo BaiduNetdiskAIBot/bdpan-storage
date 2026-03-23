@@ -33,14 +33,11 @@ jobs:
             echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Install clawhub CLI
-        run: npm i -g clawhub
-
       - name: Publish to ClawHub
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           echo "📦 发布版本: v${VERSION}"
-          clawhub publish skills/bdpan-storage \
+          npx clawhub publish skills/bdpan-storage \
             --slug bdpan-storage \
             --name "百度网盘存储" \
             --version "${VERSION}" \
