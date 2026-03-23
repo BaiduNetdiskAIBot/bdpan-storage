@@ -1,0 +1,35 @@
+name: Publish to ClawHub
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    # 仅在主库运行，fork 仓库跳过
+    if: github.repository == 'baidu-netdisk/bdpan-storage'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install clawhub CLI
+        run: npm i -g clawhub
+
+      - name: Publish to ClawHub
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "📦 发布版本: v${VERSION}"
+          clawhub publish skills/bdpan-storage \
+            --slug bdpan-storage \
+            --name "百度网盘存储" \
+            --version "${VERSION}" \
+            --changelog "Release v${VERSION}"
+        env:
+          CLAWHUB_AUTH: ${{ secrets.CLAWHUB_AUTH }}
