@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '发布版本号（如 1.1.2，不带 v 前缀）'
+        required: true
 
 jobs:
   publish:
@@ -19,12 +24,21 @@ jobs:
         with:
           node-version: '18'
 
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Install clawhub CLI
         run: npm i -g clawhub
 
       - name: Publish to ClawHub
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
+          VERSION="${{ steps.version.outputs.version }}"
           echo "📦 发布版本: v${VERSION}"
           clawhub publish skills/bdpan-storage \
             --slug bdpan-storage \
