@@ -167,7 +167,7 @@ bdpan mkdir <路径>
 bash ${CLAUDE_SKILL_DIR}/scripts/install.sh [--yes]
 ```
 
-安装器从百度 CDN（`issuecdn.baidupcs.com`）下载并执行。注意：install.sh 不执行本地 SHA256 校验，完整性依赖 HTTPS 传输保护。安全敏感场景建议先手动审查安装器内容或在沙箱中执行。
+安装器从百度 CDN（`issuecdn.baidupcs.com`）下载，install.sh 内置 SHA256 校验确保完整性。安全敏感场景建议先手动审查安装器内容或在沙箱中执行。
 
 ### 登录 / 注销 / 卸载
 

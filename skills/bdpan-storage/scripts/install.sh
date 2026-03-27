@@ -5,8 +5,16 @@
 set -e
 
 # bdpan CLI 安装器版本（与 CDN 发布版本保持同步）
-VERSION="3.6.2"
+VERSION="3.7.3"
 CDN_BASE="https://issuecdn.baidupcs.com/issue/netdisk/ai-bdpan/installer/${VERSION}"
+
+# 安装器 SHA256 校验值（每次版本更新时同步修改）
+declare -A CHECKSUMS=(
+    ["darwin-amd64"]="f49b3577ecd8b596f21e30b1bb8458a31c7ec644c5c4b64da444cea6bbc089cf"
+    ["darwin-arm64"]="8c3a6d3d427e2661a08adfa1acfce4ce849164ba73b9b60662620f7140f86b40"
+    ["linux-amd64"]="1678837c5ce6978f6491e76b10e344fba2beef6f81eb067c7ecc5668cf38fedb"
+    ["linux-arm64"]="7692f828a1af10289274e6951225fcbe9ad3c0664ebee0b492c410855220c197"
+)
 
 # 颜色输出
 RED='\033[0;31m'
@@ -184,7 +192,34 @@ main() {
         chmod +x "${installer_name}"
     fi
 
-    log_info "安装器下载完成，开始安装..."
+    log_info "安装器下载完成，正在校验完整性..."
+
+    # SHA256 完整性校验
+    local platform_key="${os}-${arch}"
+    local expected_checksum="${CHECKSUMS[$platform_key]}"
+    if [ -n "$expected_checksum" ]; then
+        local actual_checksum=""
+        if command -v sha256sum &> /dev/null; then
+            actual_checksum=$(sha256sum "${installer_name}" | awk '{print $1}')
+        elif command -v shasum &> /dev/null; then
+            actual_checksum=$(shasum -a 256 "${installer_name}" | awk '{print $1}')
+        else
+            log_warn "未找到 sha256sum/shasum 工具，跳过完整性校验"
+        fi
+
+        if [ -n "$actual_checksum" ]; then
+            if [ "$actual_checksum" != "$expected_checksum" ]; then
+                log_error "SHA256 校验失败！文件可能被篡改"
+                log_error "  期望: ${expected_checksum}"
+                log_error "  实际: ${actual_checksum}"
+                rm -f "${installer_name}"
+                exit 1
+            fi
+            log_info "SHA256 校验通过"
+        fi
+    else
+        log_warn "当前平台 ${platform_key} 无预置校验值，跳过完整性校验"
+    fi
 
     # 执行安装器（非交互模式）
     ./${installer_name} --yes
