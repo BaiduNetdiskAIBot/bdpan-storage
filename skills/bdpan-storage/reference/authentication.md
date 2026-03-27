@@ -4,28 +4,12 @@
 
 ---
 
-## 登录前免责声明（强制）
-
-**无论通过哪种方式登录，在执行登录命令之前，必须先向用户展示安全须知与免责声明，并获得用户确认。**
-
-免责声明内容参见 [reference/notes.md](./notes.md)。
-
-- **login.sh 脚本（唯一入口）**：脚本内置了免责声明展示和确认流程，**Agent 必须且只能通过此脚本执行登录**
-- **⛔ 严禁 Agent 直接调用** `bdpan login --get-auth-url`、`bdpan login --set-code` 或任何 bdpan login 子命令
-- **自动化场景**：login.sh 支持 `--yes` 参数跳过确认，但仅限用户已在对话中明确表达登录意图的场景
-
----
-
 ## 登录方式
 
-**强制要求：必须使用登录脚本**
-
-> **⛔ Agent 必须且只能通过 login.sh 脚本执行登录，严禁直接调用 bdpan login 子命令。**
->
-> **⛔ 即使在 GUI 环境（macOS、桌面 Linux），也禁止使用 `bdpan login` 直接弹出 WebView。**
+> **安全约束：** 登录方式的安全限制详见 [SKILL.md](../SKILL.md) 的「安全约束」章节。Agent 必须且只能通过 login.sh 脚本执行登录。
 
 ```bash
-bash scripts/login.sh
+bash ${CLAUDE_SKILL_DIR}/scripts/login.sh
 ```
 
 脚本会自动处理完整的登录流程（免责声明 → 用户确认 → 获取授权链接 → 校验授权码 → 完成登录）。
@@ -34,13 +18,11 @@ bash scripts/login.sh
 
 ## 验证登录状态
 
-### 查看当前登录状态
-
 ```bash
 bdpan whoami
 ```
 
-**输出示例：**
+**已登录时输出：**
 ```
 认证状态: 已登录
 Token 有效期至: 2026-03-10 10:30:00
@@ -77,7 +59,7 @@ Error: Token expired
 **解决方案：**
 ```bash
 bdpan logout
-bash scripts/login.sh
+bash ${CLAUDE_SKILL_DIR}/scripts/login.sh
 ```
 
 ### 授权链接无效
@@ -85,7 +67,7 @@ bash scripts/login.sh
 **症状：** 浏览器打开链接后提示链接无效
 
 **解决方案：**
-1. 重新执行 `bash scripts/login.sh` 获取新的授权链接
+1. 重新执行登录脚本获取新的授权链接
 2. 确保在链接有效期内完成授权（通常 10 分钟）
 
 ### 授权码输入后报错
@@ -95,9 +77,7 @@ bash scripts/login.sh
 **解决方案：**
 1. 确保授权码复制完整，没有多余空格
 2. 检查浏览器中显示的授权码是否与输入的一致
-3. 如多次失败，重新执行 `bash scripts/login.sh` 获取新授权码
-
-> **⛔ 注意：** 以上所有登录操作必须通过 `bash scripts/login.sh` 脚本执行，禁止直接使用 `bdpan login`。
+3. 如多次失败，重新执行登录脚本获取新授权码
 
 ---
 

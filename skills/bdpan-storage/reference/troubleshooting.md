@@ -17,10 +17,10 @@ Error: Token expired
 **解决方案：**
 ```bash
 bdpan logout
-bash scripts/login.sh
+bash ${CLAUDE_SKILL_DIR}/scripts/login.sh
 ```
 
-> **⛔ 注意：** 禁止直接使用 `bdpan login`，必须通过 `bash scripts/login.sh` 脚本执行登录。
+> 登录安全约束详见 [SKILL.md](../SKILL.md) 的「安全约束」章节。
 
 ### WebView 无法打开
 
@@ -59,10 +59,8 @@ https://openapi.baidu.com/oauth/2.0/authorize?response_type=device_code&client_i
 ```bash
 # 清除配置并重试
 rm ~/.config/bdpan/config.json
-bash scripts/login.sh
+bash ${CLAUDE_SKILL_DIR}/scripts/login.sh
 ```
-
-> **⛔ 注意：** 禁止直接使用 `bdpan login`，必须通过 `bash scripts/login.sh` 脚本执行登录。
 
 ---
 
@@ -235,8 +233,7 @@ Error: Permission denied
 **解决方案：**
 ```bash
 # 重新运行安装脚本
-cd skills/bdpan-storage
-bash scripts/install.sh
+bash ${CLAUDE_SKILL_DIR}/scripts/install.sh
 
 # 或者检查 ~/.local/bin 是否在 PATH 中
 echo $PATH
@@ -255,8 +252,7 @@ export PATH="$HOME/.local/bin:$PATH"
 rm ~/.local/bin/bdpan
 
 # 重新安装
-cd skills/bdpan-storage
-bash scripts/install.sh
+bash ${CLAUDE_SKILL_DIR}/scripts/install.sh
 ```
 
 ---

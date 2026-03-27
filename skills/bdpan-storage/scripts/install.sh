@@ -5,9 +5,16 @@
 set -e
 
 # bdpan CLI 安装器版本（与 CDN 发布版本保持同步）
-VERSION="3.6.2"
+VERSION="3.7.3"
 CDN_BASE="https://issuecdn.baidupcs.com/issue/netdisk/ai-bdpan/installer/${VERSION}"
-CHECKSUM_URL="${CDN_BASE}/SHA256SUMS"
+
+# 安装器 SHA256 校验值（每次版本更新时同步修改）
+declare -A CHECKSUMS=(
+    ["darwin-amd64"]="f49b3577ecd8b596f21e30b1bb8458a31c7ec644c5c4b64da444cea6bbc089cf"
+    ["darwin-arm64"]="8c3a6d3d427e2661a08adfa1acfce4ce849164ba73b9b60662620f7140f86b40"
+    ["linux-amd64"]="1678837c5ce6978f6491e76b10e344fba2beef6f81eb067c7ecc5668cf38fedb"
+    ["linux-arm64"]="7692f828a1af10289274e6951225fcbe9ad3c0664ebee0b492c410855220c197"
+)
 
 # 颜色输出
 RED='\033[0;31m'
@@ -185,59 +192,34 @@ main() {
         chmod +x "${installer_name}"
     fi
 
-    # SHA256 完整性校验（强制）
-    log_info "正在验证安装器完整性..."
-    local checksum_file="SHA256SUMS"
-    local checksum_downloaded="no"
+    log_info "安装器下载完成，正在校验完整性..."
 
-    # 下载 checksum 文件
-    if command -v curl &> /dev/null; then
-        curl -fsSL -o "${checksum_file}" "${CHECKSUM_URL}" 2>/dev/null && checksum_downloaded="yes"
-    elif command -v wget &> /dev/null; then
-        wget -q -O "${checksum_file}" "${CHECKSUM_URL}" 2>/dev/null && checksum_downloaded="yes"
-    fi
+    # SHA256 完整性校验
+    local platform_key="${os}-${arch}"
+    local expected_checksum="${CHECKSUMS[$platform_key]}"
+    if [ -n "$expected_checksum" ]; then
+        local actual_checksum=""
+        if command -v sha256sum &> /dev/null; then
+            actual_checksum=$(sha256sum "${installer_name}" | awk '{print $1}')
+        elif command -v shasum &> /dev/null; then
+            actual_checksum=$(shasum -a 256 "${installer_name}" | awk '{print $1}')
+        else
+            log_warn "未找到 sha256sum/shasum 工具，跳过完整性校验"
+        fi
 
-    if [ "$checksum_downloaded" != "yes" ] || [ ! -s "${checksum_file}" ]; then
-        log_error "无法下载 SHA256SUMS 校验文件: ${CHECKSUM_URL}"
-        rm -f "${installer_name}" "${checksum_file}"
-        exit 1
-    fi
-
-    # 检查 checksum 文件中是否包含当前安装器的记录
-    if ! grep -qF "${installer_name}" "${checksum_file}"; then
-        log_error "SHA256SUMS 中未找到 ${installer_name} 的记录"
-        rm -f "${installer_name}" "${checksum_file}"
-        exit 1
-    fi
-
-    # 提取期望 hash
-    local expected_hash=$(grep -F "${installer_name}" "${checksum_file}" | awk '{print $1}')
-
-    # 计算实际 hash（兼容 macOS 和 Linux）
-    local actual_hash=""
-    if command -v sha256sum &> /dev/null; then
-        actual_hash=$(sha256sum "${installer_name}" | awk '{print $1}')
-    elif command -v shasum &> /dev/null; then
-        actual_hash=$(shasum -a 256 "${installer_name}" | awk '{print $1}')
+        if [ -n "$actual_checksum" ]; then
+            if [ "$actual_checksum" != "$expected_checksum" ]; then
+                log_error "SHA256 校验失败！文件可能被篡改"
+                log_error "  期望: ${expected_checksum}"
+                log_error "  实际: ${actual_checksum}"
+                rm -f "${installer_name}"
+                exit 1
+            fi
+            log_info "SHA256 校验通过"
+        fi
     else
-        log_error "未找到 sha256sum/shasum 工具，无法验证文件完整性"
-        rm -f "${installer_name}" "${checksum_file}"
-        exit 1
+        log_warn "当前平台 ${platform_key} 无预置校验值，跳过完整性校验"
     fi
-
-    if [ "$actual_hash" = "$expected_hash" ]; then
-        log_info "✓ SHA256 校验通过"
-    else
-        log_error "SHA256 校验失败！安装器可能被篡改"
-        log_error "  期望: ${expected_hash}"
-        log_error "  实际: ${actual_hash}"
-        rm -f "${installer_name}" "${checksum_file}"
-        exit 1
-    fi
-
-    rm -f "${checksum_file}"
-
-    log_info "安装器下载完成，开始安装..."
 
     # 执行安装器（非交互模式）
     ./${installer_name} --yes

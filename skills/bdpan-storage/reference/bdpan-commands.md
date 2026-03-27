@@ -4,10 +4,10 @@
 
 ### login - 登录授权
 
-> **⛔ Agent 必须通过 `bash scripts/login.sh` 脚本执行登录，禁止直接调用 `bdpan login`。**
+> **⛔ Agent 必须通过登录脚本执行登录，禁止直接调用 `bdpan login`。详见 [SKILL.md](../SKILL.md) 安全约束。**
 
 ```bash
-bash scripts/login.sh
+bash ${CLAUDE_SKILL_DIR}/scripts/login.sh
 ```
 
 脚本内置了安全免责声明和完整的 OOB 授权流程。无论 GUI 或非 GUI 环境，统一使用此脚本。
@@ -23,7 +23,7 @@ bdpan logout
 ### uninstall - 完全卸载
 
 ```bash
-bash scripts/uninstall.sh
+bash ${CLAUDE_SKILL_DIR}/scripts/uninstall.sh
 ```
 
 完全卸载 bdpan CLI，自动执行以下操作：
@@ -401,17 +401,17 @@ bdpan mkdir backup --json
 
 ### update - 自动更新 Skill
 
-> **使用 `bash scripts/update.sh` 更新 Skill 文件。CLI 更新由 `bdpan` 自身管理。**
+> **使用 `bash ${CLAUDE_SKILL_DIR}/scripts/update.sh` 更新 Skill 文件。CLI 更新由 `bdpan` 自身管理。**
 
 ```bash
 # 检查并更新（交互式，需用户确认）
-bash scripts/update.sh
+bash ${CLAUDE_SKILL_DIR}/scripts/update.sh
 
 # 仅检查更新，不执行
-bash scripts/update.sh --check
+bash ${CLAUDE_SKILL_DIR}/scripts/update.sh --check
 
 # 跳过确认，自动更新（自动化场景）
-bash scripts/update.sh --yes
+bash ${CLAUDE_SKILL_DIR}/scripts/update.sh --yes
 ```
 
 **功能说明：**

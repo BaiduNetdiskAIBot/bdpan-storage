@@ -151,11 +151,11 @@ bdpan ls --json | jq -e '.[] | select(.Name == "target.txt")'
 
 ### 示例 10: 登录（统一使用 login.sh 脚本）
 
-> **⛔ 禁止直接调用 `bdpan login`，必须使用 `bash scripts/login.sh` 脚本。**
+> 登录安全约束详见 [SKILL.md](../SKILL.md) 的「安全约束」章节。
 
 ```
 用户: 帮我登录百度网盘
-AI: [执行 bash scripts/login.sh]
+AI: [执行 bash ${CLAUDE_SKILL_DIR}/scripts/login.sh]
 
     [展示安全免责声明]
     已阅读上述安全须知，确认继续登录? [y/N]
