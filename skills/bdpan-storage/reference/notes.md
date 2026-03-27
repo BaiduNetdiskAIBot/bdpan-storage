@@ -17,37 +17,10 @@
 
 ## 内部实现说明
 
-### 登录脚本路径
+### Agent 安全限制
 
-**强制要求：必须使用登录脚本**
+所有 Agent 安全约束（登录方式、Token 保护、更新控制、环境变量、路径安全）集中定义在 [SKILL.md](../SKILL.md) 的「安全约束」章节。此处不再重复，维护时以 SKILL.md 为准。
 
-```bash
-bash scripts/login.sh
-```
+### 授权码处理
 
-**强制要求：**
-- ✅ **必须使用** `@skills/bdpan-storage/scripts/login.sh` 脚本
-- ❌ **禁止**直接使用 `bdpan login`（即使在 GUI 环境）
-- ❌ **禁止**直接调用 `bdpan login --get-auth-url`、`bdpan login --set-code`
-
-该脚本内置了免责声明展示和完整的授权流程，确保用户知情同意。
-
-> **安全要求：** Agent 调用登录脚本时**禁止**使用 `--yes` 参数，必须保留用户确认环节。
-
----
-
-## 授权码处理
-
-当用户在对话中发送一个 32 位十六进制字符串（正则：`^[a-fA-F0-9]{32}$`），**必须先向用户确认**："这是百度网盘授权码吗？确认后将执行登录流程。"
-
-确认后执行 `bash scripts/login.sh`（不使用 `--yes`，保留安全确认环节）。
-
----
-
-## Agent 安全限制
-
-以下限制适用于所有 AI Agent 调用场景：
-
-- **禁止** Agent 使用 `login.sh --yes`（必须保留用户确认）
-- **禁止** Agent 使用 `update.sh --yes`（必须保留用户确认）
-- **禁止** Agent 读取或输出 `~/.config/bdpan/config.json` 内容（包含 Token）
+当用户在对话中发送一个 32 位十六进制字符串（正则：`^[a-fA-F0-9]{32}$`），处理规则详见 SKILL.md「授权码处理」章节。
