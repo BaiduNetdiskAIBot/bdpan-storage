@@ -19,8 +19,12 @@ jobs:
         run: |
           # 检查 PR 中的 commit 消息是否符合 Conventional Commits 规范
           COMMITS=$(git log --format="%s" ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
-          PATTERN="^(feat|fix|docs|style|refactor|test|chore|perf)(\(.+\))?: .+"
+          PATTERN="^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .+"
           while IFS= read -r commit; do
+            # 跳过 merge commit
+            if [[ "$commit" =~ ^Merge\ ]]; then
+              continue
+            fi
             if [[ ! "$commit" =~ $PATTERN ]]; then
               echo "❌ 不符合规范的 commit: $commit"
               echo "格式要求: <type>(<scope>): <subject>"
