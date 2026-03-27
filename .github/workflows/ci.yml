@@ -22,7 +22,7 @@ jobs:
           PATTERN="^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .+"
           while IFS= read -r commit; do
             # 跳过 merge commit
-            if [[ "$commit" =~ ^Merge\ ]]; then
+            if [[ "$commit" == Merge* ]]; then
               continue
             fi
             if [[ ! "$commit" =~ $PATTERN ]]; then
