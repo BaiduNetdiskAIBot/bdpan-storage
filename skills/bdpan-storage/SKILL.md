@@ -109,13 +109,15 @@ bdpan download "https://pan.baidu.com/s/1xxxxx?pwd=abcd" ./downloaded/ -t my-fol
 bdpan transfer "https://pan.baidu.com/s/1xxxxx" -p <提取码> [-d 目标目录] [--json]
 ```
 
-转存成功后只展示本次转存的文件（非整个目录），显示数量和目标目录。
+步骤：确认分享链接格式有效 → 确认有提取码（链接中含 `?pwd=` 或反问用户）→ 确认目标目录 → 执行。转存成功后只展示本次转存的文件（非整个目录），显示数量和目标目录。
 
 ### 分享
 
 ```bash
 bdpan share <路径> [路径...] [--json]
 ```
+
+步骤：`bdpan ls` 确认文件存在 → 执行分享 → 展示链接+提取码+有效期。
 
 > 付费接口，需在百度网盘开放平台购买服务。
 
