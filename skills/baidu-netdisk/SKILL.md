@@ -1,6 +1,9 @@
 ---
-name: bdpan-storage
-description: 百度网盘文件管理。支持上传、下载、转存、分享、搜索、移动、复制、重命名、创建文件夹。当用户提及"百度网盘""bdpan""网盘"并涉及文件操作时触发。
+name: baidu-netdisk
+description: >-
+  百度网盘(Baidu Netdisk)文件管理 — 上传、下载、转存、分享、搜索、移动、复制、重命名、创建文件夹。
+  TRIGGER: 用户提及"百度网盘/bdpan/网盘/云盘/baidu drive"并涉及文件操作。
+  DO NOT TRIGGER: 非文件存储操作，或使用其他云盘服务时。
 allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion
 argument-hint: "[操作指令]"
 ---
@@ -167,7 +170,7 @@ bdpan mkdir <路径>
 bash ${CLAUDE_SKILL_DIR}/scripts/install.sh [--yes]
 ```
 
-安装器从百度 CDN（`issuecdn.baidupcs.com`）下载，install.sh 内置 SHA256 校验确保完整性。安全敏感场景建议先手动审查安装器内容或在沙箱中执行。
+安装器从百度 CDN（`issuecdn.baidupcs.com`）下载并执行。注意：install.sh 不执行本地 SHA256 校验，完整性依赖 HTTPS 传输保护。安全敏感场景建议先手动审查安装器内容或在沙箱中执行。
 
 ### 登录 / 注销 / 卸载
 
