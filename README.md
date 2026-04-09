@@ -1,4 +1,4 @@
-<h1 align="center">bdpan-storage</h1>
+<h1 align="center">baidu-netdisk</h1>
 
 <p align="center">
   <b>百度网盘 AI Skill — 让 Agent 一句话操作你的网盘</b>
@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://github.com/BaiduNetdiskAIBot/bdpan-storage/releases"><img src="https://img.shields.io/badge/version-v1.2.0-blue" alt="Version"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-green" alt="License"></a>
-  <a href="https://pan.baidu.com/apaastobui/developer#/developer/skill"><img src="https://img.shields.io/badge/skill-bdpan--storage-orange" alt="Skill"></a>
+  <a href="https://pan.baidu.com/apaastobui/developer#/developer/skill"><img src="https://img.shields.io/badge/skill-baidu--netdisk-orange" alt="Skill"></a>
 </p>
 
 <p align="center">
@@ -15,12 +15,17 @@
   适配 Claude Code · OpenClaw · DuClaw · KimiClaw · Manus 等 AI Agent
 </p>
 
+<p align="center">
+  <em>Baidu Netdisk AI Skill — Manage cloud files with natural language.</em><br/>
+  <em>Compatible with Claude Code · Cursor · Codex CLI · Gemini CLI · OpenClaw · DuClaw · KimiClaw · Manus</em>
+</p>
+
 ---
 
 ## 一键安装
 
 ```bash
-npx skills add https://github.com/BaiduNetdiskAIBot/bdpan-storage/skills --skill bdpan-storage
+npx skills add https://github.com/BaiduNetdiskAIBot/bdpan-storage/skills --skill baidu-netdisk
 ```
 
 首次使用时，Skill 会自动引导完成 CLI 工具安装和百度网盘登录授权。
@@ -142,13 +147,13 @@ Skill 自动识别意图、执行操作、返回格式化结果。
 - **检查状态** — "检查网盘登录状态" → 显示当前认证信息
 - **更新** — "更新一下 bdpan" → 检查并更新 Skill 和 CLI
 
-更多故障排查指南参见 [troubleshooting.md](./skills/bdpan-storage/reference/troubleshooting.md)。
+更多故障排查指南参见 [troubleshooting.md](./skills/baidu-netdisk/reference/troubleshooting.md)。
 
 ## 项目结构
 
 ```
 bdpan-storage/
-├── skills/bdpan-storage/           # Skill 主目录
+├── skills/baidu-netdisk/           # Skill 主目录
 │   ├── SKILL.md                    # Skill 定义（Agent 行为规范）
 │   ├── VERSION                     # 版本号
 │   ├── reference/                  # 参考文档
@@ -170,7 +175,7 @@ bdpan-storage/
 
 ```bash
 make help                           # 查看可用命令
-make pack SKILL=bdpan-storage       # 打包指定 Skill
+make pack SKILL=baidu-netdisk       # 打包指定 Skill
 make pack-all                       # 打包所有 Skills
 ```
 

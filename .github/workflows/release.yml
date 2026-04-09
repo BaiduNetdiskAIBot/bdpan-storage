@@ -24,7 +24,7 @@ jobs:
       - name: Read version from VERSION file
         id: version
         run: |
-          VERSION=$(cat skills/bdpan-storage/VERSION | tr -d '[:space:]')
+          VERSION=$(cat skills/baidu-netdisk/VERSION | tr -d '[:space:]')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=$VERSION" >> $GITHUB_OUTPUT
           echo "📌 版本号: $VERSION"
@@ -102,7 +102,7 @@ jobs:
           echo "" >> $GITHUB_OUTPUT
           echo "### 安装方法:" >> $GITHUB_OUTPUT
           echo '```bash' >> $GITHUB_OUTPUT
-          echo "npx skills add https://github.com/baidu-netdisk/bdpan-storage/skills --skill bdpan-storage" >> $GITHUB_OUTPUT
+          echo "npx skills add https://github.com/baidu-netdisk/bdpan-storage/skills --skill baidu-netdisk" >> $GITHUB_OUTPUT
           echo '```' >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 

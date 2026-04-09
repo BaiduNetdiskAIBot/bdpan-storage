@@ -1,6 +1,6 @@
 # 贡献指南
 
-感谢你对 bdpan-storage 项目的关注！本文档将帮助你了解如何参与贡献。
+感谢你对 baidu-netdisk 项目的关注！本文档将帮助你了解如何参与贡献。
 
 ## 开发流程
 
@@ -31,7 +31,7 @@
 
 **示例**：
 ```
-feat(bdpan-storage): add batch upload support
+feat(baidu-netdisk): add batch upload support
 fix(login): handle token expiry gracefully
 docs(readme): update installation instructions
 ```
