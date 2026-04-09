@@ -37,9 +37,9 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           echo "📦 发布版本: v${VERSION}"
-          npx clawhub publish skills/bdpan-storage \
-            --slug bdpan-storage \
-            --name "百度网盘存储" \
+          npx clawhub publish skills/baidu-netdisk \
+            --slug baidu-netdisk \
+            --name "百度网盘" \
             --version "${VERSION}" \
             --changelog "Release v${VERSION}"
         env:

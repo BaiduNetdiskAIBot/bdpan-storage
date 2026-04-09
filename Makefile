@@ -22,8 +22,8 @@ help:
 	@echo "  make clean             清理打包输出"
 	@echo ""
 	@echo "示例:"
-	@echo "  make pack SKILL=bdpan-storage"
-	@echo "  make pack SKILL=bdpan-storage OVERWRITE=1"
+	@echo "  make pack SKILL=baidu-netdisk"
+	@echo "  make pack SKILL=baidu-netdisk OVERWRITE=1"
 
 # 列出所有 skills
 list:

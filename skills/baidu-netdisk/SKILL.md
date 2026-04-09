@@ -1,6 +1,9 @@
 ---
-name: bdpan-storage
-description: 百度网盘文件管理。支持上传、下载、转存、分享、搜索、移动、复制、重命名、创建文件夹。当用户提及"百度网盘""bdpan""网盘"并涉及文件操作时触发。
+name: baidu-netdisk
+description: >-
+  百度网盘(Baidu Netdisk)文件管理 — 上传、下载、转存、分享、搜索、移动、复制、重命名、创建文件夹。
+  TRIGGER: 用户提及"百度网盘/bdpan/网盘/云盘/baidu drive"并涉及文件操作。
+  DO NOT TRIGGER: 非文件存储操作，或使用其他云盘服务时。
 allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion
 argument-hint: "[操作指令]"
 ---
@@ -91,7 +94,47 @@ bdpan upload <本地路径> <远端路径>
 bdpan download <远端路径> <本地路径>
 ```
 
-步骤：`bdpan ls` 确认云端存在 → 确认本地路径 → 检查本地是否已存在 → 执行。若 ls 未找到，建议 `bdpan search <文件名>`。
+步骤：`bdpan ls` 确认云端存在 → 确认本地路径 → 检查本地是否已存在 → **检查文件大小决定下载策略** → 执行。若 ls 未找到，建议 `bdpan search <文件名>`。
+
+**大文件下载策略（重要）：**
+
+Agent 的 Bash 工具有执行超时限制，大文件下载可能因超时而中断。必须根据文件大小选择下载策略：
+
+1. **获取文件大小**：用 `bdpan ls --json <远端路径>` 获取 `size` 字段（字节）
+2. **按大小分策略执行**：
+
+| 文件大小 | 策略 | 执行方式 |
+|----------|------|---------|
+| ≤ 50MB | 直接下载 | `bdpan download <远端路径> <本地路径>`，Bash timeout 设为 300000（5 分钟） |
+| > 50MB | 后台下载 | 使用 `nohup` 后台执行，Agent 轮询进度 |
+
+**小文件（≤ 50MB）直接下载：**
+
+正常执行 `bdpan download`，Bash 工具 timeout 参数设为 `300000`（5 分钟）。
+
+**大文件（> 50MB）后台下载流程：**
+
+```bash
+# 1. 启动后台下载（nohup + 进度日志）
+nohup bdpan download <远端路径> <本地路径> > /tmp/bdpan-dl-$$.log 2>&1 & echo $!
+```
+
+```bash
+# 2. 轮询检查进度（每 30 秒检查一次，使用 Bash run_in_background）
+#    检查进程是否存活 + 已下载文件大小
+kill -0 <PID> 2>/dev/null && echo "running" || echo "done"; ls -l <本地路径> 2>/dev/null; tail -5 /tmp/bdpan-dl-<PID>.log 2>/dev/null
+```
+
+```bash
+# 3. 下载完成后清理日志
+rm -f /tmp/bdpan-dl-<PID>.log
+```
+
+Agent 执行大文件后台下载时的行为规范：
+- 启动后台下载后，**立即告知用户**：下载已在后台启动，文件大小 X，预计需要 Y 时间
+- 每次轮询后向用户报告进度（已下载大小 / 总大小、百分比）
+- 下载完成后告知用户最终结果
+- 如果进程异常退出，检查日志并报告错误原因
 
 **分享链接下载（先转存再下载到本地）：**
 
@@ -100,6 +143,8 @@ bdpan download "https://pan.baidu.com/s/1xxxxx?pwd=abcd" ./downloaded/
 bdpan download "https://pan.baidu.com/s/1xxxxx" ./downloaded/ -p abcd    # 提取码单独传入
 bdpan download "https://pan.baidu.com/s/1xxxxx?pwd=abcd" ./downloaded/ -t my-folder  # 指定转存目录
 ```
+
+> 分享链接下载同样适用大文件策略：转存完成后，用 `bdpan ls --json` 获取文件大小，再按上述策略执行下载。
 
 ### 转存
 
@@ -167,7 +212,7 @@ bdpan mkdir <路径>
 bash ${CLAUDE_SKILL_DIR}/scripts/install.sh [--yes]
 ```
 
-安装器从百度 CDN（`issuecdn.baidupcs.com`）下载，install.sh 内置 SHA256 校验确保完整性。安全敏感场景建议先手动审查安装器内容或在沙箱中执行。
+安装器从百度 CDN（`issuecdn.baidupcs.com`）下载并执行。注意：install.sh 不执行本地 SHA256 校验，完整性依赖 HTTPS 传输保护。安全敏感场景建议先手动审查安装器内容或在沙箱中执行。
 
 ### 登录 / 注销 / 卸载
 
