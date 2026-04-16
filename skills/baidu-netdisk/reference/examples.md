@@ -1,6 +1,6 @@
 # 使用示例
 
-本文档包含 baidu-netdisk 的详细使用示例。
+本文档包含 baidu drive 的详细使用示例。
 
 ---
 

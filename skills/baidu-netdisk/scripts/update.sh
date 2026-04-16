@@ -1,5 +1,5 @@
 #!/bin/bash
-# baidu-netdisk Skill 自动更新脚本
+# baidu drive Skill 自动更新脚本
 # 通过百度配置接口检测并更新 Skill 文件
 # CLI 更新由 bdpan 自身管理，本脚本不负责
 
@@ -139,7 +139,7 @@ do_update() {
     trap "rm -rf '$tmp_dir'" EXIT
 
     # 下载 zip
-    local zip_path="${tmp_dir}/baidu-netdisk.zip"
+    local zip_path="${tmp_dir}/baidu-drive.zip"
     if command -v curl &> /dev/null; then
         curl -fsSL -o "$zip_path" "$remote_url" || {
             log_error "下载 Skill 更新包失败"
@@ -254,7 +254,7 @@ main() {
     # 展示状态
     echo ""
     echo -e "${BLUE}========================================${NC}"
-    echo -e "${BLUE}  baidu-netdisk Skill 更新检查${NC}"
+    echo -e "${BLUE}  baidu drive Skill 更新检查${NC}"
     echo -e "${BLUE}========================================${NC}"
     echo ""
     echo -e "  本地版本: ${local_version}"
