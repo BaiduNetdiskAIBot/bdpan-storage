@@ -1,4 +1,4 @@
-<h1 align="center">baidu-netdisk</h1>
+<h1 align="center">baidu-drive</h1>
 
 <p align="center">
   <b>百度网盘 AI Skill — 让 Agent 一句话操作你的网盘</b>
