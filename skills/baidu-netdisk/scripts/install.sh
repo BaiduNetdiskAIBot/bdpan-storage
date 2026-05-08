@@ -8,13 +8,16 @@ set -e
 VERSION="3.7.3"
 CDN_BASE="https://issuecdn.baidupcs.com/issue/netdisk/ai-bdpan/installer/${VERSION}"
 
-# 安装器 SHA256 校验值（每次版本更新时同步修改）
-declare -A CHECKSUMS=(
-    ["darwin-amd64"]="f49b3577ecd8b596f21e30b1bb8458a31c7ec644c5c4b64da444cea6bbc089cf"
-    ["darwin-arm64"]="8c3a6d3d427e2661a08adfa1acfce4ce849164ba73b9b60662620f7140f86b40"
-    ["linux-amd64"]="1678837c5ce6978f6491e76b10e344fba2beef6f81eb067c7ecc5668cf38fedb"
-    ["linux-arm64"]="7692f828a1af10289274e6951225fcbe9ad3c0664ebee0b492c410855220c197"
-)
+# 按平台返回安装器 SHA256 校验值（兼容 bash 3.2+，替代 declare -A）
+get_checksum() {
+    case "$1" in
+        darwin-amd64)  echo "f49b3577ecd8b596f21e30b1bb8458a31c7ec644c5c4b64da444cea6bbc089cf" ;;
+        darwin-arm64)  echo "8c3a6d3d427e2661a08adfa1acfce4ce849164ba73b9b60662620f7140f86b40" ;;
+        linux-amd64)   echo "1678837c5ce6978f6491e76b10e344fba2beef6f81eb067c7ecc5668cf38fedb" ;;
+        linux-arm64)   echo "7692f828a1af10289274e6951225fcbe9ad3c0664ebee0b492c410855220c197" ;;
+        *)             echo "" ;;
+    esac
+}
 
 # 颜色输出
 RED='\033[0;31m'
@@ -196,7 +199,8 @@ main() {
 
     # SHA256 完整性校验
     local platform_key="${os}-${arch}"
-    local expected_checksum="${CHECKSUMS[$platform_key]}"
+    local expected_checksum
+    expected_checksum="$(get_checksum "$platform_key")"
     if [ -n "$expected_checksum" ]; then
         local actual_checksum=""
         if command -v sha256sum &> /dev/null; then
