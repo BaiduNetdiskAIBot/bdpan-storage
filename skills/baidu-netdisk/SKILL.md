@@ -2,8 +2,10 @@
 name: baidu-drive
 description: >-
   百度网盘(Baidu Drive)文件管理 — 上传、下载、转存、分享、搜索、移动、复制、重命名、创建文件夹。
-  TRIGGER: 用户提及"百度网盘/bdpan/网盘/云盘/baidu drive/Baidu Drive"并涉及文件操作。
-  DO NOT TRIGGER: 非文件存储操作，或使用其他云盘服务时。
+  同时支持 Agent 记忆备份/恢复（kimiclaw/maxclaw/qclaw/openclaw）。
+  TRIGGER: 用户提及"百度网盘/bdpan/网盘/云盘/baidu drive/Baidu Drive"并涉及文件操作；
+           或用户提及"备份记忆"、"恢复记忆"、"查看记忆备份"等记忆相关操作。
+  DO NOT TRIGGER: 非文件存储操作，或使用其他云盘服务时；本地记忆整理/清理操作。
 allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion
 argument-hint: "[操作指令]"
 ---
@@ -16,6 +18,8 @@ argument-hint: "[操作指令]"
 
 ## 触发规则
 
+### 网盘文件操作触发
+
 同时满足以下条件才执行：
 
 1. 用户明确提及"百度网盘"、"bdpan"、"网盘"
@@ -24,6 +28,24 @@ argument-hint: "[操作指令]"
 未通过触发规则时，禁止执行任何 bdpan 命令。
 
 > **上下文延续：** 当前对话已在进行网盘操作时，后续消息无需再次提及"网盘"即可触发。
+
+### 记忆备份/恢复触发
+
+**以下表达即使未提及"网盘"也应触发（仅限 kimiclaw/maxclaw/qclaw/openclaw 环境）：**
+
+| 用户说法示例 | 触发操作 |
+|------------|---------|
+| "备份记忆"、"备份我的记忆"、"把记忆存到网盘" | backup |
+| "查看记忆备份"、"有哪些备份"、"备份列表" | list |
+| "恢复记忆"、"还原记忆"、"回滚记忆"、"记忆回档" | restore（需确认日期） |
+| "恢复 3月16号 的记忆"、"恢复 2026-03-16 的备份" | restore 指定日期 |
+
+**以下情况不触发记忆备份/恢复：**
+- "帮我记住…"、"整理记忆"、"清理记忆"（本地操作，不涉及网盘）
+- "备份我的代码/文件"（操作对象不是记忆）
+- 非以上 4 种 Claw 环境（报错说明不支持，不执行）
+
+**区分原则：** 操作对象是否为 Agent 记忆文件（AGENTS.md、SOUL.md、MEMORY.md、memory/*.md 等）。
 
 ---
 
@@ -34,6 +56,7 @@ argument-hint: "[操作指令]"
 3. **更新/登录**：更新必须由用户明确指令触发，禁止自动或静默执行；Agent 禁止使用 `--yes` 参数执行 update.sh 或 login.sh
 4. **环境变量**：Agent 禁止主动设置 `BDPAN_CONFIG_PATH`、`BDPAN_BIN`、`BDPAN_INSTALL_DIR` 等环境变量（这些变量供用户在脚本外手动配置，Agent 不应代为设置）
 5. **路径安全**：禁止路径穿越（`..`、`~`）、禁止访问 `/apps/bdpan/` 范围外的绝对路径
+6. **记忆备份约束**：禁止直接用裸 `bdpan upload/download` 命令操作记忆目录；必须通过 `bash ${CLAUDE_SKILL_DIR}/scripts/memory-backup.sh` 脚本执行，以确保 manifest 生成、路径安全检查、safety net 备份等机制正常运行
 
 ---
 
@@ -228,6 +251,46 @@ bash ${CLAUDE_SKILL_DIR}/scripts/uninstall.sh [--yes]   # 卸载
 bash ${CLAUDE_SKILL_DIR}/scripts/update.sh              # 检查并更新（需用户确认）
 bash ${CLAUDE_SKILL_DIR}/scripts/update.sh --check       # 仅检查更新
 ```
+
+---
+
+## 记忆备份与恢复
+
+仅支持 4 种 Claw 产品（kimiclaw、maxclaw、qclaw、openclaw），自动检测当前环境。
+
+**网盘存储路径：** `/apps/bdpan/agent-memory/<agent>/<device>/manual/<timestamp>/`
+
+**备份内容：** 7 个 Workspace 文件（AGENTS.md、SOUL.md、USER.md、IDENTITY.md、TOOLS.md、MEMORY.md、HEARTBEAT.md）+ `memory/*.md` + `manifest.json`
+
+### 备份记忆
+
+```bash
+bash ${CLAUDE_SKILL_DIR}/scripts/memory-backup.sh backup
+```
+
+### 查看备份列表
+
+```bash
+bash ${CLAUDE_SKILL_DIR}/scripts/memory-backup.sh list
+```
+
+### 恢复备份
+
+```bash
+# 按日期模糊匹配（如只输入日期部分）
+bash ${CLAUDE_SKILL_DIR}/scripts/memory-backup.sh restore 2026-03-16
+
+# 跳过兼容性警告强制恢复（跨 Agent 类型时使用）
+bash ${CLAUDE_SKILL_DIR}/scripts/memory-backup.sh restore 2026-03-16 --force
+```
+
+**恢复安全机制：** 恢复前自动将当前本地记忆备份到 `<workspace>/.backup-before-restore/<timestamp>/`，防止误操作数据丢失。
+
+### 操作流程
+
+1. 执行前自动检查：bdpan 是否安装 → 是否已登录（未满足则引导处理）
+2. 检测当前 Agent 类型 → 不支持的环境报错退出
+3. 执行对应操作（backup/list/restore）
 
 ---
 
