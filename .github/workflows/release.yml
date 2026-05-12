@@ -4,115 +4,168 @@ on:
   push:
     branches: [main]
     paths:
-      - 'skills/*/VERSION'  # VERSION 文件变更时触发
-  workflow_dispatch:         # 支持手动触发
+      - 'skills/*/VERSION'
+  workflow_dispatch:
+    inputs:
+      skill:
+        description: 'Skill 名称（如 baidu-netdisk），留空则发布所有'
+        required: false
 
 permissions:
   contents: write
 
 jobs:
-  release:
-    # 自动触发仅主库运行，手动触发（workflow_dispatch）不限
+  detect:
     if: github.repository == 'baidu-netdisk/bdpan-storage' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # 需要完整历史来检查 tag 是否已存在
+          fetch-depth: 2
 
-      - name: Read version from VERSION file
-        id: version
+      - name: Detect changed skills
+        id: set-matrix
         run: |
-          VERSION=$(cat skills/baidu-netdisk/VERSION | tr -d '[:space:]')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "tag=$VERSION" >> $GITHUB_OUTPUT
-          echo "📌 版本号: $VERSION"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.skill }}" ]; then
+            SKILL="${{ github.event.inputs.skill }}"
+            VERSION=$(cat "skills/${SKILL}/VERSION" | tr -d '[:space:]')
+            echo "matrix={\"include\":[{\"skill\":\"${SKILL}\",\"version\":\"${VERSION}\"}]}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            MATRIX='{"include":['
+            FIRST=true
+            for skill_path in skills/*/; do
+              if [ -d "$skill_path" ] && [ -f "${skill_path}VERSION" ]; then
+                skill_name=$(basename "$skill_path")
+                version=$(cat "${skill_path}VERSION" | tr -d '[:space:]')
+                if [ "$FIRST" = true ]; then
+                  FIRST=false
+                else
+                  MATRIX="${MATRIX},"
+                fi
+                MATRIX="${MATRIX}{\"skill\":\"${skill_name}\",\"version\":\"${version}\"}"
+              fi
+            done
+            MATRIX="${MATRIX}]}"
+            echo "matrix=${MATRIX}" >> $GITHUB_OUTPUT
+          else
+            MATRIX='{"include":['
+            FIRST=true
+            CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'skills/*/VERSION')
+            for file in $CHANGED; do
+              skill_name=$(echo "$file" | cut -d'/' -f2)
+              version=$(cat "$file" | tr -d '[:space:]')
+              if [ "$FIRST" = true ]; then
+                FIRST=false
+              else
+                MATRIX="${MATRIX},"
+              fi
+              MATRIX="${MATRIX}{\"skill\":\"${skill_name}\",\"version\":\"${version}\"}"
+            done
+            MATRIX="${MATRIX}]}"
+            echo "matrix=${MATRIX}" >> $GITHUB_OUTPUT
+          fi
+
+  release:
+    needs: detect
+    if: ${{ needs.detect.outputs.matrix != '{"include":[]}' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.detect.outputs.matrix) }}
+      fail-fast: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Check if tag already exists
         id: check_tag
         run: |
-          if git rev-parse "${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+          TAG="${{ matrix.skill }}/${{ matrix.version }}"
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          if git rev-parse "refs/tags/${TAG}" >/dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "⚠️ Tag ${{ steps.version.outputs.version }} 已存在，跳过发布"
+            echo "⚠️ Tag ${TAG} 已存在，跳过发布"
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "✅ Tag ${{ steps.version.outputs.version }} 不存在，准备发布"
+            echo "✅ Tag ${TAG} 不存在，准备发布"
           fi
 
-      - name: Package Skills
+      - name: Package Skill
         if: steps.check_tag.outputs.exists == 'false'
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
+          SKILL="${{ matrix.skill }}"
+          VERSION="${{ matrix.version }}"
           mkdir -p dist
+          echo "📦 打包: ${SKILL} ${VERSION}"
+          (cd skills && zip -r "../dist/${SKILL}-${VERSION}.zip" "$SKILL" \
+            -x "*/.git/*" \
+            -x "*/.DS_Store" \
+            -x "*/node_modules/*" \
+            -x "*/__pycache__/*" \
+            -x "*/.env*" \
+            -x "*/.idea/*" \
+            -x "*/.vscode/*" \
+            -x "*/dist/*" \
+            -x "*/build/*" \
+            -x "*.pyc" \
+            -x "*.log" \
+            -x "*.tmp")
+          echo "✅ 完成: dist/${SKILL}-${VERSION}.zip"
 
-          for skill_path in skills/*/; do
-            if [ -d "$skill_path" ]; then
-              skill_name=$(basename "$skill_path")
-              echo "📦 打包: $skill_name v$VERSION"
-
-              (cd skills && zip -r "../dist/${skill_name}-${VERSION}.zip" "$skill_name" \
-                -x "*/.git/*" \
-                -x "*/.DS_Store" \
-                -x "*/node_modules/*" \
-                -x "*/__pycache__/*" \
-                -x "*/.env*" \
-                -x "*/.idea/*" \
-                -x "*/.vscode/*" \
-                -x "*/dist/*" \
-                -x "*/build/*" \
-                -x "*.pyc" \
-                -x "*.log" \
-                -x "*.tmp")
-
-              echo "✅ 完成: dist/${skill_name}-${VERSION}.zip"
-            fi
-          done
-
-      - name: Create tag
+      - name: Create and push tag
         if: steps.check_tag.outputs.exists == 'false'
         run: |
-          git tag "${{ steps.version.outputs.version }}"
-          git push origin "${{ steps.version.outputs.version }}"
+          git tag "${{ steps.check_tag.outputs.tag }}"
+          git push origin "${{ steps.check_tag.outputs.tag }}"
 
       - name: Generate Release Notes
         if: steps.check_tag.outputs.exists == 'false'
         id: release_notes
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          echo "RELEASE_NOTES<<EOF" >> $GITHUB_OUTPUT
-          echo "## 📦 Skills ${VERSION}" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          echo "### 包含的 Skills:" >> $GITHUB_OUTPUT
-
-          for skill_path in skills/*/; do
-            if [ -d "$skill_path" ]; then
-              skill_name=$(basename "$skill_path")
-              skill_file="${skill_path}/SKILL.md"
-
-              if [ -f "$skill_file" ]; then
-                desc=$(grep "^description:" "$skill_file" | head -1 | sed 's/description: //' || echo "暂无描述")
-                echo "- **${skill_name}** ${VERSION}: ${desc}" >> $GITHUB_OUTPUT
+          SKILL="${{ matrix.skill }}"
+          VERSION="${{ matrix.version }}"
+          SKILL_FILE="skills/${SKILL}/SKILL.md"
+          DESC=""
+          if [ -f "$SKILL_FILE" ]; then
+            # 支持 YAML 多行格式 (description: >-) 和单行格式
+            DESC_LINE=$(grep -n "^description:" "$SKILL_FILE" | head -1 | cut -d: -f1)
+            if [ -n "$DESC_LINE" ]; then
+              INLINE=$(sed -n "${DESC_LINE}p" "$SKILL_FILE" | sed 's/^description: *//')
+              if [ "$INLINE" = ">" ] || [ "$INLINE" = ">-" ] || [ "$INLINE" = "|" ] || [ -z "$INLINE" ]; then
+                DESC=$(sed -n "$((DESC_LINE+1))p" "$SKILL_FILE" | sed 's/^ *//')
               else
-                echo "- **${skill_name}** ${VERSION}" >> $GITHUB_OUTPUT
+                DESC="$INLINE"
               fi
             fi
-          done
+          fi
 
-          echo "" >> $GITHUB_OUTPUT
-          echo "### 安装方法:" >> $GITHUB_OUTPUT
-          echo '```bash' >> $GITHUB_OUTPUT
-          echo "npx skills add https://github.com/baidu-netdisk/bdpan-storage/skills --skill baidu-netdisk" >> $GITHUB_OUTPUT
-          echo '```' >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "RELEASE_NOTES<<EOF"
+            echo "## 📦 Skill ${SKILL} ${VERSION}"
+            echo ""
+            if [ -n "$DESC" ]; then
+              echo "${DESC}"
+              echo ""
+            fi
+            echo "### 安装方法:"
+            echo '```bash'
+            echo "npx skills add https://github.com/baidu-netdisk/bdpan-storage/skills --skill ${SKILL}"
+            echo '```'
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Create Release
         if: steps.check_tag.outputs.exists == 'false'
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ steps.version.outputs.version }}
+          tag_name: ${{ steps.check_tag.outputs.tag }}
+          name: "${{ matrix.skill }} ${{ matrix.version }}"
           body: ${{ steps.release_notes.outputs.RELEASE_NOTES }}
-          files: dist/*.zip
+          files: dist/${{ matrix.skill }}-${{ matrix.version }}.zip
           draft: false
           prerelease: false
         env:
@@ -121,9 +174,8 @@ jobs:
       - name: Summary
         if: steps.check_tag.outputs.exists == 'false'
         run: |
-          echo "## 🎉 Release ${{ steps.version.outputs.version }} 创建成功!" >> $GITHUB_STEP_SUMMARY
+          echo "## 🎉 Release ${{ steps.check_tag.outputs.tag }} 创建成功!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Tag:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**包含的文件:**" >> $GITHUB_STEP_SUMMARY
-          ls -lh dist/*.zip | awk '{print "- " $9 " (" $5 ")"}' >> $GITHUB_STEP_SUMMARY
+          echo "**Skill:** ${{ matrix.skill }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ matrix.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** ${{ steps.check_tag.outputs.tag }}" >> $GITHUB_STEP_SUMMARY

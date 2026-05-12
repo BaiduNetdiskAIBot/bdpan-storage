@@ -3,16 +3,18 @@ name: Publish to ClawHub
 on:
   push:
     tags:
-      - 'v*'
+      - '*/v*'
   workflow_dispatch:
     inputs:
+      skill:
+        description: 'Skill 目录名（如 baidu-netdisk）'
+        required: true
       version:
-        description: '发布版本号（如 1.1.2，不带 v 前缀）'
+        description: '发布版本号（如 1.6.0，不带 v 前缀）'
         required: true
 
 jobs:
   publish:
-    # 仅在主库运行，fork 仓库跳过
     if: github.repository == 'baidu-netdisk/bdpan-storage'
     runs-on: ubuntu-latest
     steps:
@@ -24,22 +26,32 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Determine version
-        id: version
+      - name: Determine skill and version
+        id: info
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+            SKILL="${{ github.event.inputs.skill }}"
+            VERSION="${{ github.event.inputs.version }}"
           else
-            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+            TAG="${GITHUB_REF#refs/tags/}"
+            SKILL="${TAG%%/*}"
+            VERSION="${TAG#*/v}"
           fi
+          echo "skill=${SKILL}" >> $GITHUB_OUTPUT
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+          DISPLAY_NAME=$(grep "^name:" "skills/${SKILL}/SKILL.md" | head -1 | sed 's/name: *//')
+          echo "display_name=${DISPLAY_NAME}" >> $GITHUB_OUTPUT
 
       - name: Publish to ClawHub
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          echo "📦 发布版本: v${VERSION}"
-          npx clawhub publish skills/baidu-netdisk \
-            --slug baidu-netdisk \
-            --name "百度网盘" \
+          SKILL="${{ steps.info.outputs.skill }}"
+          VERSION="${{ steps.info.outputs.version }}"
+          DISPLAY_NAME="${{ steps.info.outputs.display_name }}"
+          echo "📦 发布: ${SKILL} v${VERSION} (${DISPLAY_NAME})"
+          npx clawhub publish "skills/${SKILL}" \
+            --slug "${SKILL}" \
+            --name "${DISPLAY_NAME}" \
             --version "${VERSION}" \
             --changelog "Release v${VERSION}"
         env:
