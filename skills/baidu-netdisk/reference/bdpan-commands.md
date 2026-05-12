@@ -205,20 +205,27 @@ bdpan ls --json
 ### share - 创建分享链接
 
 ```bash
-bdpan share <path>
+bdpan share <path> [path...] [--period <天数>] [--json]
 ```
 
 | 参数 | 说明 |
 |------|------|
-| `path` | 要分享的文件或文件夹路径 |
+| `path` | 要分享的文件或文件夹路径（支持多个） |
+| `--period, -d` | 分享有效期（天）：0=永久, 1, 7, 30（默认：7） |
 
 **示例：**
 ```bash
-# 分享文件
+# 分享文件（默认 7 天有效）
 bdpan share report.pdf
 
 # 分享文件夹
 bdpan share project
+
+# 永久分享
+bdpan share report.pdf -d 0
+
+# 30 天有效期
+bdpan share report.pdf --period 30
 
 # JSON 输出
 bdpan share --json report.pdf
