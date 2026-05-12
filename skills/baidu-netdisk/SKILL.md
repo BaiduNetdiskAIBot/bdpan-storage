@@ -5,7 +5,7 @@ description: >-
   同时支持 Agent 记忆备份/恢复（kimiclaw/maxclaw/qclaw/openclaw）。
   TRIGGER: 用户提及"百度网盘/bdpan/网盘/云盘/baidu drive/Baidu Drive"并涉及文件操作；
            或用户提及"备份记忆"、"恢复记忆"、"查看记忆备份"等记忆相关操作。
-  DO NOT TRIGGER: 非文件存储操作，或使用其他云盘服务时；本地记忆整理/清理操作。
+  DO NOT TRIGGER: 非文件存储操作，或使用其他云盘服务时；本地记忆整理/清理操作；PPT 生成操作（已独立为 baidu-wenku-aippt skill）。
 allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion
 argument-hint: "[操作指令]"
 ---
@@ -182,10 +182,20 @@ bdpan transfer "https://pan.baidu.com/s/1xxxxx" -p <提取码> [-d 目标目录]
 ### 分享
 
 ```bash
-bdpan share <路径> [路径...] [--json]
+bdpan share <路径> [路径...] [--period <天数>] [--json]
 ```
 
-步骤：`bdpan ls` 确认文件存在 → 执行分享 → 展示链接+提取码+有效期。
+**--period / -d 参数：** 分享有效期（天），取值：0=永久, 1, 7, 30（默认：7）
+
+**智能选择规则：**
+
+Agent 必须根据用户的语义意图判断有效期，而非仅匹配固定关键词。
+
+- 用户表达了"希望长期有效/永久/不过期/一直能用"等语义 → 使用 `--period 0`，并提示用户：永久链接无法自动过期，请注意文件安全
+- 用户指定了具体天数或时间范围 → 选择最接近的枚举值（1、7、30）
+- 用户未表达任何有效期偏好 → 默认 `--period 7`
+
+步骤：`bdpan ls` 确认文件存在 → 根据用户意图选择有效期 → 执行分享 → 展示链接+提取码+有效期。
 
 > 付费接口，需在百度网盘开放平台购买服务。
 
