@@ -131,12 +131,21 @@ jobs:
           SKILL_FILE="skills/${SKILL}/SKILL.md"
           DESC=""
           if [ -f "$SKILL_FILE" ]; then
-            DESC=$(grep "^description:" "$SKILL_FILE" | head -1 | sed 's/description: *//')
+            # 支持 YAML 多行格式 (description: >-) 和单行格式
+            DESC_LINE=$(grep -n "^description:" "$SKILL_FILE" | head -1 | cut -d: -f1)
+            if [ -n "$DESC_LINE" ]; then
+              INLINE=$(sed -n "${DESC_LINE}p" "$SKILL_FILE" | sed 's/^description: *//')
+              if [ "$INLINE" = ">" ] || [ "$INLINE" = ">-" ] || [ "$INLINE" = "|" ] || [ -z "$INLINE" ]; then
+                DESC=$(sed -n "$((DESC_LINE+1))p" "$SKILL_FILE" | sed 's/^ *//')
+              else
+                DESC="$INLINE"
+              fi
+            fi
           fi
 
           {
             echo "RELEASE_NOTES<<EOF"
-            echo "## ${SKILL} ${VERSION}"
+            echo "## 📦 Skill ${SKILL} ${VERSION}"
             echo ""
             if [ -n "$DESC" ]; then
               echo "${DESC}"

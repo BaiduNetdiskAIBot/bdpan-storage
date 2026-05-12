@@ -1,5 +1,5 @@
 ---
-name: baidu-wenku-aippt
+name: baidu-wenku-aippt-personal
 description: >-
   百度文库 AI PPT 生成工具 — 一句话自动生成高质量 PPT，支持多种风格、场景和配色。
   TRIGGER: 用户提及"生成PPT/做PPT/制作PPT/AI PPT/aippt/幻灯片/演示文稿"时触发。

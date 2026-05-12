@@ -12,7 +12,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-CONFIG_API="https://pan.baidu.com/act/v2/api/conf?conf_key=bd_skills_wenku_aippt"
+CONFIG_API="https://pan.baidu.com/act/v2/api/conf?conf_key=baidu_wenku_aippt_personal_skill"
 
 # 脚本所在目录（用于定位 Skill 文件）
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -139,7 +139,7 @@ do_update() {
     trap "rm -rf '$tmp_dir'" EXIT
 
     # 下载 zip
-    local zip_path="${tmp_dir}/baidu-wenku-aippt.zip"
+    local zip_path="${tmp_dir}/baidu-wenku-aippt-personal.zip"
     if command -v curl &> /dev/null; then
         curl -fsSL -o "$zip_path" "$remote_url" || {
             log_error "下载 Skill 更新包失败"

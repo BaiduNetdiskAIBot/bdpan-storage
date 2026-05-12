@@ -25,7 +25,7 @@
 ## 一键安装
 
 ```bash
-npx skills add https://github.com/BaiduNetdiskAIBot/bdpan-storage/skills --skill baidu-netdisk
+npx skills add https://github.com/baidu-netdisk/bdpan-storage/skills --skill baidu-drive
 ```
 
 首次使用时，Skill 会自动引导完成 CLI 工具安装和百度网盘登录授权。
