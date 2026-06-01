@@ -101,16 +101,16 @@ jobs:
           VERSION="${{ matrix.version }}"
           mkdir -p dist
           echo "📦 打包: ${SKILL} ${VERSION}"
-          (cd skills && zip -r "../dist/${SKILL}-${VERSION}.zip" "$SKILL" \
-            -x "*/.git/*" \
-            -x "*/.DS_Store" \
-            -x "*/node_modules/*" \
-            -x "*/__pycache__/*" \
-            -x "*/.env*" \
-            -x "*/.idea/*" \
-            -x "*/.vscode/*" \
-            -x "*/dist/*" \
-            -x "*/build/*" \
+          (cd "skills/${SKILL}" && zip -r "../../dist/${SKILL}-${VERSION}.zip" . \
+            -x ".git/*" \
+            -x ".DS_Store" \
+            -x "node_modules/*" \
+            -x "__pycache__/*" \
+            -x ".env*" \
+            -x ".idea/*" \
+            -x ".vscode/*" \
+            -x "dist/*" \
+            -x "build/*" \
             -x "*.pyc" \
             -x "*.log" \
             -x "*.tmp")
