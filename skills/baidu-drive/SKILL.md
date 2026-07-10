@@ -65,7 +65,7 @@ argument-hint: "[操作指令]"
 每次触发时按顺序执行：
 
 1. **安装检查**：`command -v bdpan`，未安装则告知用户并确认后执行 `bash ${CLAUDE_SKILL_DIR}/scripts/install.sh`（用户确认后可加 `--yes` 跳过安装器内部确认）
-2. **登录检查**：`bdpan whoami`，未登录则引导执行 `bash ${CLAUDE_SKILL_DIR}/scripts/login.sh`
+2. **登录检查**：`bdpan whoami`，未登录则引导执行 `bash ${CLAUDE_SKILL_DIR}/scripts/login.sh`。（**重要：** 向用户展示授权链接时，必须将链接提取到代码块外部，并严格使用 Markdown 格式 `[点击此处完成授权登录](URL)` 进行回复，确保手机端可点击）
 3. **路径校验**：验证远端路径在 `/apps/bdpan/` 范围内
 
 ---
