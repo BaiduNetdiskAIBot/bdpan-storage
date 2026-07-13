@@ -119,20 +119,35 @@ else
     exit 1
 fi
 
-# 显示授权链接（支持 OSC 8 终端超链接，可直接点击打开浏览器）
+# 显示授权链接
 echo ""
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}请在浏览器中打开以下链接完成授权:${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
-# OSC 8 超链接格式：\e]8;;URL\e\\显示文本\e]8;;\e\\
-# 支持 iTerm2, VS Code Terminal, Wezterm, GNOME Terminal, Windows Terminal 等
-# 不支持的终端会优雅降级，只显示文本
-echo -e "\033]8;;${AUTH_URL}\033\\${YELLOW}${AUTH_URL}${NC}\033]8;;\033\\"
+# 纯文本单独一行输出，不附带任何 ANSI/OSC 转义序列。
+# 无论是真实终端、日志采集，还是 AI Agent（如小艺 claw 等）抓取 stdout 文本
+# 再转发展示给用户，都能拿到一个完整、干净、可直接复制/点击的 URL。
+# 注意：此前版本使用 OSC 8 超链接转义序列（\e]8;;URL\e\\显示文本\e]8;;\e\\）
+# 在同一行内嵌入了两次 URL，在非真实终端环境（如部分 Agent 的输出解析逻辑）
+# 下容易被截断或错误拼接，导致用户拿到的链接不可用。
+echo "${AUTH_URL}"
 echo ""
+# 提供给 AI Agent 的 Markdown 格式，便于 Agent 直接抓取并放到代码块外
+echo -e "${YELLOW}Agent请提取以下Markdown格式回复给用户(需放在代码块外):${NC}"
+echo "[👉 点击此处打开授权页面](${AUTH_URL})"
+echo ""
+# 仅在真实交互式终端下，额外附加 OSC 8 可点击版本作为增强体验
+# （支持 iTerm2、VS Code Terminal、Wezterm、GNOME Terminal、Windows Terminal 等）。
+# 当 stdout 被管道/重定向或被 Agent 捕获时 [ -t 1 ] 为 false，不会输出该转义
+# 序列，从而避免被非终端场景的文本解析逻辑误处理。
+if [ -t 1 ]; then
+    echo -e "\033]8;;${AUTH_URL}\033\\${YELLOW}👆 点击此处直接打开授权页面（如终端支持）${NC}\033]8;;\033\\"
+    echo ""
+fi
 echo -e "${BLUE}========================================${NC}"
 echo -e "${YELLOW}提示:${NC}"
-echo -e "${YELLOW}1. 可直接点击上方链接打开浏览器（如终端支持）${NC}"
+echo -e "${YELLOW}1. 可直接复制上方链接到浏览器打开（支持的终端也可直接点击）${NC}"
 echo -e "${YELLOW}2. 链接有效期为 10 分钟${NC}"
 echo -e "${YELLOW}3. 授权成功后，浏览器会显示一个 32 位授权码${NC}"
 echo -e "${YELLOW}4. 请复制授权码并粘贴到下方${NC}"
