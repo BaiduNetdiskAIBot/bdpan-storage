@@ -162,22 +162,31 @@ Agent 执行大文件后台下载时的行为规范：
 **分享链接下载（先转存再下载到本地）：**
 
 ```bash
+bdpan download "https://pan.baidu.com/s/5xxxxx" ./downloaded/  # 无码公开分享
 bdpan download "https://pan.baidu.com/s/1xxxxx?pwd=abcd" ./downloaded/
 bdpan download "https://pan.baidu.com/s/1xxxxx" ./downloaded/ -p abcd    # 提取码单独传入
 bdpan download "https://pan.baidu.com/s/1xxxxx?pwd=abcd" ./downloaded/ -t my-folder  # 指定转存目录
 ```
 
-> 分享链接下载同样适用大文件策略：转存完成后，用 `bdpan ls --json` 获取文件大小，再按上述策略执行下载。
+> 分享链接下载支持 `/s/1`、`/s/5` 等分享链接前缀。未携带 `?pwd=` 且用户未提供 `-p` 时，直接执行命令，不预先追问提取码；由 CLI 判断链接是否为无码公开分享。分享链接下载同样适用大文件策略：转存完成后，用 `bdpan ls --json` 获取文件大小，再按上述策略执行下载。
 
 ### 转存
 
 将分享文件转存到网盘，**不下载到本地**（与 download 分享链接模式的区别）。
 
 ```bash
-bdpan transfer "https://pan.baidu.com/s/1xxxxx" -p <提取码> [-d 目标目录] [--json]
+bdpan transfer "https://pan.baidu.com/s/5xxxxx" [-p 提取码] [-d 目标目录] [--json]
 ```
 
-步骤：确认分享链接格式有效 → 确认有提取码（链接中含 `?pwd=` 或反问用户）→ 确认目标目录 → 执行。转存成功后只展示本次转存的文件（非整个目录），显示数量和目标目录。
+步骤：确认分享链接是标准 `https://pan.baidu.com/s/...` 格式 → 如果链接含 `?pwd=` 或用户明确提供提取码则保留该提取码，否则不要求用户补充 → 确认目标目录 → 执行。转存成功后只展示本次转存的文件（非整个目录），显示数量和目标目录。
+
+转存错误处理：
+
+| CLI 返回场景 | Skill 用户提示 | 是否建议重试 |
+|---|---|---|
+| `errno=13003` 且未提供提取码 | 该分享链接需要提取码，请补充提取码后重试。 | 是 |
+| `errno=13003` 且已提供提取码 | 提取码错误，请检查提取码后重试。 | 是 |
+| `errno=13004` | 分享链接已失效、已取消或不存在。 | 否 |
 
 ### 分享
 
@@ -245,7 +254,7 @@ bdpan mkdir <路径>
 bash ${CLAUDE_SKILL_DIR}/scripts/install.sh [--yes]
 ```
 
-安装器从百度 CDN（`issuecdn.baidupcs.com`）下载并执行。注意：install.sh 不执行本地 SHA256 校验，完整性依赖 HTTPS 传输保护。安全敏感场景建议先手动审查安装器内容或在沙箱中执行。
+安装器从百度 CDN（`issuecdn.baidupcs.com`）下载并执行。install.sh 会按平台对安装器执行 SHA256 完整性校验；校验失败时会删除安装器并终止安装。安全敏感场景仍建议先手动审查安装器内容或在沙箱中执行。
 
 ### 登录 / 注销 / 卸载
 

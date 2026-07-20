@@ -114,6 +114,9 @@ bdpan download report.pdf ./downloaded-report.pdf
 # 文件夹下载
 bdpan download project/ ./project-restore/
 
+# 从无码公开分享链接下载
+bdpan download "https://pan.baidu.com/s/5xxxxx" ./downloaded/
+
 # 从分享链接下载（链接中包含提取码）
 bdpan download "https://pan.baidu.com/s/1xxxxx?pwd=abcd" ./downloaded/
 
@@ -125,7 +128,8 @@ bdpan download "https://pan.baidu.com/s/1xxxxx?pwd=abcd" ./downloaded/ -t my-fol
 ```
 
 **分享链接下载说明：**
-- 自动识别分享链接格式 `https://pan.baidu.com/s/1{surl}?pwd={pwd}`
+- 自动识别分享链接格式 `https://pan.baidu.com/s/{prefix}{surl}[?pwd={pwd}]`，支持 `/s/1`、`/s/5` 等前缀
+- 未携带 `?pwd=` 且未使用 `-p` 时，按无码公开分享链接直接尝试，不需要预先填写提取码
 - 分享文件会先转存到 `/apps/bdpan/{日期}/` 目录（或使用 `-t` 指定的目录）
 - 然后下载到指定的本地路径
 
@@ -142,13 +146,16 @@ bdpan transfer <分享链接> [选项]
 **选项：**
 | 选项 | 说明 |
 |------|------|
-| `-p` | 提取码（如果链接中未包含） |
+| `-p` | 提取码（可选；如果链接中未包含且分享需要密码时填写） |
 | `-d` | 目标目录（相对路径自动拼接 `/apps/bdpan`，默认为应用根目录） |
 | `--json` | JSON 格式输出转存结果 |
 
 **示例：**
 ```bash
-# 基本用法 - 转存到应用根目录 /apps/bdpan/
+# 无码公开分享转存到应用根目录 /apps/bdpan/
+bdpan transfer "https://pan.baidu.com/s/5xxxxx"
+
+# 需要提取码的分享，使用 -p 传入
 bdpan transfer "https://pan.baidu.com/s/1xxxxx" -p abcd
 
 # 提取码在链接中
