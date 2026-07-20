@@ -5,16 +5,17 @@
 set -e
 
 # bdpan CLI 安装器版本（与 CDN 发布版本保持同步）
-VERSION="3.7.3"
+VERSION="3.8.4"
 CDN_BASE="https://issuecdn.baidupcs.com/issue/netdisk/ai-bdpan/installer/${VERSION}"
 
 # 按平台返回安装器 SHA256 校验值（兼容 bash 3.2+，替代 declare -A）
 get_checksum() {
     case "$1" in
-        darwin-amd64)  echo "f49b3577ecd8b596f21e30b1bb8458a31c7ec644c5c4b64da444cea6bbc089cf" ;;
-        darwin-arm64)  echo "8c3a6d3d427e2661a08adfa1acfce4ce849164ba73b9b60662620f7140f86b40" ;;
-        linux-amd64)   echo "1678837c5ce6978f6491e76b10e344fba2beef6f81eb067c7ecc5668cf38fedb" ;;
-        linux-arm64)   echo "7692f828a1af10289274e6951225fcbe9ad3c0664ebee0b492c410855220c197" ;;
+        darwin-amd64)  echo "ea4f0cddbac111067f4b71fc2a80ebd183afc7961815e76e743c0064cb474b5a" ;;
+        darwin-arm64)  echo "eeae393193ca643949dfef86c2cdf55c2b68069a38a89e9120b7217f5951d6d8" ;;
+        linux-amd64)   echo "26d7de75422f7ed79ea7a3cd9b9fcf343f0f436ad50fe0be882812c4ddae826e" ;;
+        linux-arm64)   echo "fa0a31009990039d95166f30c2d69c49341615fe403247dedf930c999e4ba32a" ;;
+        windows-amd64) echo "3f221189dfc4ca85f174a53247d514f9586dfd408bc068791c6f33cb95bbebf4" ;;
         *)             echo "" ;;
     esac
 }
