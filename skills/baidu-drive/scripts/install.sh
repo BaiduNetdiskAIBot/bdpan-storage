@@ -11,11 +11,11 @@ CDN_BASE="https://issuecdn.baidupcs.com/issue/netdisk/ai-bdpan/installer/${VERSI
 # 按平台返回安装器 SHA256 校验值（兼容 bash 3.2+，替代 declare -A）
 get_checksum() {
     case "$1" in
-        darwin-amd64)  echo "ea4f0cddbac111067f4b71fc2a80ebd183afc7961815e76e743c0064cb474b5a" ;;
-        darwin-arm64)  echo "eeae393193ca643949dfef86c2cdf55c2b68069a38a89e9120b7217f5951d6d8" ;;
-        linux-amd64)   echo "26d7de75422f7ed79ea7a3cd9b9fcf343f0f436ad50fe0be882812c4ddae826e" ;;
-        linux-arm64)   echo "fa0a31009990039d95166f30c2d69c49341615fe403247dedf930c999e4ba32a" ;;
-        windows-amd64) echo "3f221189dfc4ca85f174a53247d514f9586dfd408bc068791c6f33cb95bbebf4" ;;
+        darwin-amd64)  echo "cc6b10d4afea9baad77c68dadea6b9e4ecd7f8815cf364ebe6be0e51648e4623" ;;
+        darwin-arm64)  echo "a0c395a83f9abc8f1423c30b21dfae73819376f7b1822d3bd4d3de62392c4c0c" ;;
+        linux-amd64)   echo "02050e9a5ed5c5ddc314bf920c103238a669366a130e3bd43a125d83fdd00548" ;;
+        linux-arm64)   echo "abb39a1f7dc0bf44883bbb30b057e6e65c5db64ffdce7c2ae92dea60a136362a" ;;
+        windows-amd64) echo "194f5174bbb3d9260cc5b7d465c4f98d6b9279e028db136dc1e57cc3bc1f49a0" ;;
         *)             echo "" ;;
     esac
 }
