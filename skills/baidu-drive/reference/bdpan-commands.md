@@ -168,6 +168,42 @@ bdpan transfer "https://pan.baidu.com/s/1xxxxx" -p abcd -d my-folder/
 bdpan transfer "https://pan.baidu.com/s/1xxxxx" -p abcd --json
 ```
 
+**查询分享目录（只读）：**
+
+```bash
+bdpan transfer list "<分享链接>" \
+  [-p <提取码>] \
+  [--source-dir <分享目录路径>] \
+  [--page <页码>] \
+  [--page-size <每页数量>] \
+  [--json]
+```
+
+| 选项 | 默认值 | 说明 |
+|------|--------|------|
+| `--source-dir` | 空 | 空值查询分享第一层；子目录使用上一页返回的 `path` |
+| `--page` | `1` | 页码，必须大于等于 1 |
+| `--page-size` | `100` | 每页数量，范围 1-100 |
+| `-p, --pwd` | 空 | 分享提取码；链接含 `pwd` 时可省略 |
+| `--json` | false | Agent 调用时必须启用 |
+
+列表 JSON 中的 `fs_id` 是字符串，必须原样保存，避免大整数精度丢失。`count` 是当前页条目数；`has_more=true` 表示可能有下一页。
+
+**按所选文件 ID 转存：**
+
+```bash
+bdpan transfer select "<分享链接>" \
+  --fsid <文件ID>[,<文件ID>...] \
+  [-p <提取码>] \
+  [-d <目标目录>] \
+  [--json]
+```
+
+- `--fsid` 必填，可重复传入或使用逗号分隔；每个 ID 必须是大于 0 的十进制整数；
+- 客户端不设置选择数量上限，实际转存数量由服务端按接收账号权益和目录递归内容判断；
+- 执行前必须由 Agent 向用户展示选择清单和目标目录并取得确认；
+- 成功 JSON 的 `status` 为 `submitted`，表示异步任务已提交，不代表服务端已完成全部转存。
+
 **与 download 的区别：**
 - `transfer` 仅将分享文件转存到自己的网盘，不下载到本地
 - `download` 会先转存再下载到本地路径

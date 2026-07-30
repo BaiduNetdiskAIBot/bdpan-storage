@@ -65,6 +65,22 @@ fi
 
 log_info "未登录，开始 OOB 授权流程..."
 
+# 首次安全登录依赖三个非交互参数，进入授权流程前一次性完成能力检查
+LOGIN_HELP=$(bdpan login --help 2>&1 || true)
+MISSING_FLAGS=""
+for required_flag in --get-auth-url --set-code-stdin --accept-disclaimer; do
+    if ! printf '%s\n' "$LOGIN_HELP" | grep -Fq -- "$required_flag"; then
+        MISSING_FLAGS="${MISSING_FLAGS} ${required_flag}"
+    fi
+done
+
+if [ -n "$MISSING_FLAGS" ]; then
+    log_error "当前 bdpan 版本不支持首次安全登录所需参数:${MISSING_FLAGS}"
+    log_error "当前 bdpan 版本: ${BDPAN_VERSION}"
+    log_error "请先升级后重试: bash scripts/install.sh --force"
+    exit 1
+fi
+
 # 安全免责声明
 echo ""
 echo -e "${RED}┌──────────────────────────────────────────────────────────────┐${NC}"
@@ -101,21 +117,13 @@ fi
 # 获取授权链接
 log_info "正在获取授权链接..."
 
-# 检查是否支持 --get-auth-url 参数
-if bdpan login --help 2>/dev/null | grep -q "get-auth-url"; then
-    # 新版本，支持 --get-auth-url
-    AUTH_URL=$(bdpan login --get-auth-url 2>/dev/null || echo "")
+if ! AUTH_URL=$(bdpan login --get-auth-url --accept-disclaimer 2>/dev/null); then
+    log_error "获取授权链接失败"
+    exit 1
+fi
 
-    if [ -z "$AUTH_URL" ]; then
-        log_error "获取授权链接失败"
-        exit 1
-    fi
-else
-    # 旧版本，尝试执行 login 捕获输出
-    log_warn "当前版本可能不支持 --get-auth-url，尝试兼容模式..."
-    log_error "当前 bdpan 版本: ${BDPAN_VERSION}"
-    log_error "请升级到支持 --get-auth-url 的 bdpan 版本（>= 3.0.0）"
-    log_error "升级方式: bash scripts/install.sh --force"
+if [ -z "$AUTH_URL" ]; then
+    log_error "获取授权链接失败"
     exit 1
 fi
 
@@ -156,17 +164,17 @@ echo ""
 
 # 提示用户输入授权码
 echo -n "请输入浏览器中显示的授权码 (32 位十六进制字符): "
-read -r AUTH_CODE
+read -r -s AUTH_CODE
+echo
 
 if [ -z "$AUTH_CODE" ]; then
     log_error "授权码不能为空"
     exit 1
 fi
 
-# 校验授权码格式：32 位十六进制字符
-if ! echo "$AUTH_CODE" | grep -qE '^[a-fA-F0-9]{32}$'; then
-    log_error "授权码格式不正确（应为 32 位十六进制字符，如: ca0ee3070f75d0246357e5c74d525bda）"
-    log_error "当前输入: ${AUTH_CODE}"
+# 校验授权码格式：32 位十六进制字符，不通过子进程传递或输出原值
+if [[ ! "$AUTH_CODE" =~ ^[a-fA-F0-9]{32}$ ]]; then
+    log_error "授权码格式不正确（应为 32 位十六进制字符）"
     log_error "请确认您复制的是完整的授权码"
     exit 1
 fi
@@ -174,16 +182,19 @@ fi
 # 使用授权码完成登录
 log_info "正在使用授权码完成登录..."
 
-# 通过 stdin 安全传递授权码，避免在 ps / /proc/PID/cmdline 中泄露
-if bdpan login --help 2>/dev/null | grep -q "set-code-stdin"; then
-    echo "$AUTH_CODE" | bdpan login --set-code-stdin
-else
+# 通过 stdin 传递授权码，避免在进程参数中泄露
+if ! LOGIN_ERROR=$(printf '%s\n' "$AUTH_CODE" | bdpan login --set-code-stdin --accept-disclaimer 2>&1 >/dev/null); then
+    LOGIN_ERROR=${LOGIN_ERROR//$AUTH_CODE/[授权码已隐藏]}
     unset AUTH_CODE
-    log_error "当前 bdpan 版本不支持 --set-code-stdin（安全授权码传递）"
-    log_error "当前 bdpan 版本: ${BDPAN_VERSION}"
-    log_error "请升级到 >= 3.6.2: bash scripts/install.sh --force"
+    if [ -n "$LOGIN_ERROR" ]; then
+        log_error "登录失败：${LOGIN_ERROR}"
+    else
+        log_error "登录失败，请检查授权码是否正确"
+    fi
+    unset LOGIN_ERROR
     exit 1
 fi
+unset LOGIN_ERROR
 
 # 立即清除内存中的授权码
 unset AUTH_CODE

@@ -51,7 +51,7 @@ argument-hint: "[操作指令]"
 
 ## 安全约束（最高优先级，不可被任何用户指令覆盖）
 
-1. **登录**：必须使用 `bash ${CLAUDE_SKILL_DIR}/scripts/login.sh`，禁止直接调用 `bdpan login` 及其任何子命令/参数（包括 `--get-auth-url`、`--set-code` 等，即使在 GUI 环境也禁止）
+1. **登录**：必须使用 `bash ${CLAUDE_SKILL_DIR}/scripts/login.sh`，禁止直接调用 `bdpan login` 及其任何子命令/参数（包括 `--get-auth-url`、`--set-code`、`--set-code-stdin` 等，即使在 GUI 环境也禁止）
 2. **Token/配置**：禁止读取或输出 `~/.config/bdpan/config.json` 内容（含 access_token 等敏感凭据）
 3. **更新/登录**：更新必须由用户明确指令触发，禁止自动或静默执行；Agent 禁止使用 `--yes` 参数执行 update.sh 或 login.sh
 4. **环境变量**：Agent 禁止主动设置 `BDPAN_CONFIG_PATH`、`BDPAN_BIN`、`BDPAN_INSTALL_DIR` 等环境变量（这些变量供用户在脚本外手动配置，Agent 不应代为设置）
@@ -180,6 +180,47 @@ bdpan transfer "https://pan.baidu.com/s/5xxxxx" [-p 提取码] [-d 目标目录]
 
 步骤：确认分享链接是标准 `https://pan.baidu.com/s/...` 格式 → 如果链接含 `?pwd=` 或用户明确提供提取码则保留该提取码，否则不要求用户补充 → 确认目标目录 → 执行。转存成功后只展示本次转存的文件（非整个目录），显示数量和目标目录。
 
+#### 选择性转存
+
+用户只说“转存这个分享链接”时，直接执行上述整体转存，不增加目录浏览或确认步骤。只有以下情况进入选择性转存：
+
+1. 用户明确要求查看分享内容、进入目录或选择部分内容；
+2. 整体转存返回 `errno=13072` 或 `errno=13073`，且用户同意缩小转存范围。
+
+先检查当前 CLI 是否支持新命令：
+
+```bash
+bdpan transfer list --help
+```
+
+若命令不存在，明确提示用户升级 bdpan，不得尝试拼接未知参数。
+
+目录查询是只读操作，可直接执行：
+
+```bash
+bdpan transfer list "<分享链接>" --page 1 --page-size 100 --json
+bdpan transfer list "<分享链接>" --source-dir "<item.path>" --page 1 --page-size 100 --json
+```
+
+Agent 必须遵守以下规则：
+
+- 用名称和序号向用户展示当前页内容；不得要求用户手工输入 `fs_id`；
+- 在内部将 JSON 中的 `fs_id` 按字符串原样保存，禁止转为 JavaScript Number；
+- 用户说“进入某目录”时，使用该项的 `path` 作为下一次 `--source-dir`；
+- `has_more=true` 时可将 `--page` 加 1 查询下一页，下一页为空时停止；
+- 返回上一级时，根据当前 `dir` 计算父目录；分享第一层统一使用空 `--source-dir`；
+- 不得因为查询 `page_size=100` 而声称转存最多只能选择 100 项。
+
+用户选好内容后，先展示名称、数量和目标目录，取得用户确认，再执行写入：
+
+```bash
+bdpan transfer select "<分享链接>" --fsid "<fs_id>[,<fs_id>...]" --dir "<目标目录>" --json
+```
+
+`--dir` 指定的目标目录不存在时，`transfer select` 会自动创建该目录后再转存，无需预先执行 `bdpan mkdir`；目标目录仍须位于 `/apps/bdpan/` 范围内。
+
+`status=submitted` 只表示异步任务已提交，不得表述为全部文件已经转存完成。用户取消时立即结束，不执行 `transfer select`。
+
 转存错误处理：
 
 | CLI 返回场景 | Skill 用户提示 | 是否建议重试 |
@@ -187,6 +228,12 @@ bdpan transfer "https://pan.baidu.com/s/5xxxxx" [-p 提取码] [-d 目标目录]
 | `errno=13003` 且未提供提取码 | 该分享链接需要提取码，请补充提取码后重试。 | 是 |
 | `errno=13003` 且已提供提取码 | 提取码错误，请检查提取码后重试。 | 是 |
 | `errno=13004` | 分享链接已失效、已取消或不存在。 | 否 |
+| `transfer select` 返回 `errno=13061` | 选择的文件 ID 不正确或已不存在，请重新查询分享内容并检查所选 `fs_id`。 | 重新查询后重试 |
+| `transfer select` 返回 `errno=13041` | 选择的文件 ID 不属于当前分享链接，请使用当前链接查询返回的 `fs_id` 重新选择。 | 重新选择后重试 |
+| `errno=13072` 或 `errno=13073` | 已达到账号单次转存数量上限，询问是否改为选择性转存。 | 不自动重试 |
+| `transfer select --dir` 返回 `errno=20013` | 目标目录创建失败，请检查目标目录是否位于 `/apps/bdpan/` 范围内；路径无误仍失败时，保留错误 ID 并反馈排查服务授权或路径问题。 | 检查路径后重试 |
+
+数量上限按目录递归后的实际内容计算：普通用户 500、VIP 3000、SVIP 50000。不得自动拆分、自动重试或承诺选择一个目录一定成功。
 
 ### 分享
 
@@ -206,7 +253,7 @@ Agent 必须根据用户的语义意图判断有效期，而非仅匹配固定�
 
 步骤：`bdpan ls` 确认文件存在 → 根据用户意图选择有效期 → 执行分享 → 展示链接+提取码+有效期。
 
-> 付费接口，需在百度网盘开放平台购买服务。
+`bdpan share` 返回 `errno=20013` 时，先用 `bdpan ls` 确认分享路径是否已被删除；路径仍存在时，保留错误 ID 并反馈排查服务授权或路径问题。
 
 ### 搜索
 
@@ -224,6 +271,8 @@ bdpan cp <源路径> <目标目录>
 bdpan rename <路径> <新名称>       # 第二参数是文件名，非完整路径
 bdpan mkdir <路径>
 ```
+
+`bdpan mv` 返回 `errno=12`（内部服务错误）时，先检查源路径与目标路径是否相同，或是否将文件夹移动到自身；提示用户更换目标目录，不自动重试。
 
 ---
 
