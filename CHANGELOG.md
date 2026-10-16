@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 功能更新
+
+### Added
+
+- 支持 `search-content` 正文片段搜索，增加命令能力检查、会员三态预检和引用展示规则。
+- 明确有限候选、定位与续页不可用、索引未知的能力边界；正文片段不代替全文读取。
+- 新增 `bdpan get-content`：按 fsid 读取文件正文，一次最多 5 个，结果按输入顺序返回
+  - `.txt`/`.md` 同步读取，一条命令直接出正文
+  - `.doc`/`.docx`/`.pdf`/`.ppt`/`.pptx`/`.xls`/`.xlsx` 走异步解析：本命令只创建任务并返回 `task_id`
+  - 单文件支持 `--page-start`/`--page-end` 按页读取（仅 Word/PDF/PPT；Excel 的页是转 PDF 后的分页，不支持）
+  - 某一项失败不影响其他项，失败项带 `error` 且整条命令退出码非零
+- 新增 `bdpan get-content-result <taskid>`：查询解析任务状态与正文；同一批异步文件共用一个 `task_id`，一次查询取回整批。正文超 2 万字时服务端转存 BOS，返回带签名的临时下载链接（2 小时有效）
+- 两个命令的结果均包含 `fsid`/`path`/`return_url`/`return_hint`/`return_markdown`（服务端接口只返回 `fsid`，`path` 与链接由 CLI 补齐）
+
+### Changed
+
+- `reference/bdpan-commands.md` 补充两个命令的参数、约束与 JSON 输出格式，并新增「读取正文错误码」小节（21061~21064、40101~40108、50101~50103）
+- 回端链接字段的命令清单加入 `get-content`、`get-content-result`
+
 ## [1.7.5] - 2026-08-25
 
 ### Added
@@ -32,6 +51,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 内部标识不再外泄给用户：实测 Agent 回复中直接打印了 `fsid` 数值；SKILL.md 与 `reference/bdpan-commands.md` 现明确禁止在面向用户的回复（正文、表格列、括号补充）中展示 `fsid`/`fs_id`、`owner_uid`、`uid`、`traceid`，用户可见字段收敛为名称、路径、大小、时间和 `return_markdown` 链接，仅在用户明确索要时给出
 - 长对话后不再漏查看链接：实测宿主用脚本只提取 `saved_path`/`fsid`/`message` 三个字段，把 `return_markdown` 过滤掉，导致上传后没有链接。文档现明确禁止二次裁剪 CLI 输出字段，并说明 CLI 3.8.7 已把链接同时写进 `message` 与新增的 `agent_reply`（预渲染整句），任选其一原样回显即可
 - README 删除口径与 SKILL.md 对齐：安全设计表格由「删除按明确意图执行」改为「删除需明确意图 + 明确确认」，并补充列出待删对象、等待确认的要求；静态检查同时断言新措辞存在与旧措辞消失（A-08）
+
+## [1.7.3] - 2026-07-28
+
+### Added
+
+- 支持浏览分享目录并按用户选择转存部分内容
+
+### Fixed
+
+- 首次非交互登录显式传递免责声明确认，并通过 stdin 提交授权码
 
 ## [1.4.0] - 2026-04-07
 

@@ -1,5 +1,7 @@
 # bdpan CLI 命令快速参考
 
+以下命令为简写；Agent 实际调用必须附加 `--agentname`、`--session-input`（本轮原文，shell 单引号包裹）和 `--session-id`（同一对话复用），见 [公共参数规则](../SKILL.md#所有命令公共参数agent-必传)。
+
 ## 认证命令
 
 ### login - 登录授权
@@ -47,6 +49,16 @@ bdpan whoami
 ```
 
 显示当前登录状态、用户名和 Token 有效期信息。
+
+`whoami --json` 包含以下会员字段：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `vip_type` | integer/null | `vip_version=v2`：0=普通用户、1=VIP、2=SVIP；未返回时为 null |
+| `is_svip` | boolean/null | 已识别会员类型时表示是否为 SVIP；缺失或无法识别类型时为 null |
+| `entitlement_status` | string | `known` 表示会员身份已知，服务准入仍由服务端校验；`unknown` 不表示非会员 |
+
+正文搜索的预检与暂停规则见 [Skill 执行流程](../SKILL.md#搜索正文片段)。
 
 **已登录时输出：**
 ```
@@ -339,6 +351,102 @@ bdpan search report --page 2 --json
 
 自然语言“搜索”“找一下”时，Agent 必须逐项读取 JSON 结果中的 `return_markdown` 并原样输出（缺失时才用 `return_url` 渲染 `[点击查看]({return_url})`）；不得把结果重新整理成不带链接的路径表。
 
+### search-content - 搜索正文片段
+
+搜索文档正文并返回匹配片段。能力检查、会员预检和结果展示见 [Skill 执行流程](../SKILL.md#搜索正文片段)，JSON 字段见[输出契约](#search-content-命令输出)。
+
+```bash
+bdpan search-content <query> [--dir <目录>|--dir-fsid <目录ID>] [--file-types <格式列表>] [--page-size <数量>] --json --no-check-update
+```
+
+| 参数／选项 | 默认值 | 说明 |
+|-----------|--------|------|
+| `query` | 必填 | 正文搜索词或自然语言查询 |
+| `--dir` | 应用根目录 | 相对于 `/apps/bdpan` 的目录，或沙盒内绝对路径；超出范围的路径拒绝执行 |
+| `--dir-fsid` | 空 | 与 `--dir` 互斥；十进制目录 ID 按字符串传入，CLI 校验其为授权范围内目录 |
+| `--file-types` | `pdf,docx,txt,md,pptx,xlsx` | 仅支持这六种后缀的逗号列表，在本次召回候选中筛选 |
+| `--page-size` | `10` | 范围 1–50，仅裁剪本次候选，不提供下一页 |
+| `--json` | false | Agent 必须启用；成功和失败均采用 `{code,data,error}` 外层 |
+| `--no-check-update` | false | 能力检查、会员预检和实际搜索均启用，跳过自动版本检查 |
+
+### get-content - 读取文件正文
+
+```bash
+bdpan get-content <fsid> [fsid...] [选项]
+```
+
+| 参数 | 说明 |
+|------|------|
+| `fsid` | 文件 ID（必填），一次最多 5 个 |
+
+**选项：**
+| 选项 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `--page-start` | int | `0` | 起始页（从 1 开始，含）；**仅单文件的 Word/PDF/PPT 支持** |
+| `--page-end` | int | `0` | 结束页（含）；**仅单文件的 Word/PDF/PPT 支持** |
+| `--json` | - | - | JSON 格式输出 |
+
+**两类文件走不同路径，返回字段不同：**
+
+| 文件类型 | 行为 | 该命令返回 |
+|----------|------|------------|
+| `.txt` `.md` | 同步读取，一条命令直接出正文 | `content` |
+| `.doc` `.docx` `.pdf` `.ppt` `.pptx` `.xls` `.xlsx` | 异步解析，**本命令只创建任务** | `task_id`（正文要用 `get-content-result` 再查一次） |
+
+其余类型（图片、音频、压缩包、无后缀、目录等）直接返回该项错误。
+
+**示例：**
+```bash
+# 读 txt（同步，直接出正文）
+bdpan get-content 1100987500222364 --json
+
+# 读 docx（异步，只拿到 task_id，还要再查一次）
+bdpan get-content 986232775041442 --json
+
+# 一次读多个（最多 5 个），结果按输入顺序返回
+bdpan get-content 111 222 333 --json
+
+# 只读某文档的第 1~3 页（仅单文件的 Word/PDF/PPT）
+bdpan get-content 111 --page-start 1 --page-end 3 --json
+```
+
+**约束（客户端快速失败，不发起网络请求）：**
+- 一次最多 5 个 fsid；
+- 页参数只支持**单文件**，多文件带页参数直接拒绝；
+- 页参数**不支持** `.xls`/`.xlsx`（Excel 的“页”是转成 PDF 后的分页，与 sheet/单元格无关）与 `.txt`/`.md`；
+- `--page-start` 不得大于 `--page-end`。
+
+**多文件时**：结果为数组，顺序与输入一致；**某一项失败不影响其他项**（部分成功），失败项带 `error`，整条命令退出码非零。若同一 fsid 传了多次，结果里会出现多个同 fsid 的项，**请用下标对应，不要只用 fsid 匹配**。
+
+**异步项必须二次查询**：`.docx`/`.pdf` 等异步类型在 `get-content` 阶段**没有 `content`**，只有 `task_id`。同一批异步文件**共用同一个 task_id**，因此一次 `get-content-result` 就能取回整批。
+
+### get-content-result - 查询文件解析任务结果
+
+```bash
+bdpan get-content-result <taskid> [--json]
+```
+
+| 参数 | 说明 |
+|------|------|
+| `taskid` | `get-content` 返回的任务 ID（必填） |
+
+**任务状态：**
+| status | 含义 | Agent 该怎么做 |
+|--------|------|----------------|
+| `running` | 任务未结束 | 稍后重试（退出码 1，**这不是失败**） |
+| `succeeded` | 全部文件读取成功且未被截断 | 直接使用 `content` |
+| `partial` | 有文件失败或被截断 | 逐项看 `error` / `truncated` |
+| `failed` | 全部文件失败，`files` 为空 | 接口不返回失败原因 |
+
+**正文超长（合计超 2 万字）**时服务端转存 BOS：该文件 `content` 为空、`url` 是带签名的下载链接（**有效期 2 小时**），`char_count` 仍为完整字数。
+
+**示例：**
+```bash
+bdpan get-content-result 84f80cda-aa63-4619-9ee3-f5393866324d --json
+```
+
+> 任务耗时实测为**秒级到分钟级且不稳定**（同一个文件可能几秒，也可能十几分钟）。Agent 轮询时应留足时间，不要因为一次 `running` 就重复发起 `get-content`。
+
 ### mv - 移动文件或文件夹
 
 ```bash
@@ -553,9 +661,23 @@ PATH 配置建议:
 
 ## JSON 输出格式
 
-### 回端链接字段（v1.7.5）
+### 回端链接字段（v1.7.6）
 
-以下命令成功且链接生成成功时，JSON 结果会返回 `return_url`、`return_hint` 和 `return_markdown`（单结果在顶层，多结果在每个 item 内）：`upload`、`download`、`transfer`、`search`、`ls`、`cp`、`mv`、`rename`、`mkdir`。
+以下命令成功且链接生成成功时，JSON 结果会返回 `return_url`、`return_hint` 和 `return_markdown`（单结果在顶层，多结果在每个 item 内）：`upload`、`download`、`transfer`、`search`、`ls`、`cp`、`mv`、`rename`、`mkdir`、`get-content`、`get-content-result`。
+
+**链接字段的取用位置按命令不同，取错位置会导致 Agent 读不到链接而漏展示：**
+
+| 命令 | 链接所在位置 | 每项的链接字段 |
+|------|-------------|----------------|
+| `ls` | 顶层数组 `[...]` | `return_markdown`（缺失时 `return_url`） |
+| `search` | 顶层 `items[...]`（**不是** `data`） | `return_markdown`（缺失时 `return_url`） |
+| `search-content` | `data.hits[...]` | **`file_url`**（本命令**不返回** `return_markdown`） |
+| `get-content` | `data[...]` | `return_markdown`（缺失时 `return_url`）；异步项另有 `task_id` |
+| `get-content-result` | `data.files[...]` | `return_markdown`（缺失时 `return_url`） |
+
+> `search-content` 是唯一例外：命中项里只有 `file_url` / `file_url_target`，没有 `return_url` / `return_markdown`，Agent 必须直接渲染 `[点击查看](file_url)`。
+
+> `get-content` / `get-content-result` 的 `path` 与 `return_url` 都由 CLI 侧补齐：服务端 filecontents 接口只返回 `fsid` 和文件名，不含路径与链接。
 
 当前 CLI 使用正式 `https://pan.baidu.com/union/spirit/launch` 协议生成客户端链接（文件目标 `target=file`、目录目标 `target=dir`），并生成 Web 目录兜底链接。所有 URL 必须当作不透明值处理；目标能否预览由网盘主端判断，CLI 与 Skill 都不做判断，文件和目录的用户文案统一为“点击查看”。
 
@@ -765,11 +887,62 @@ Skill/Agent 不判断客户端协议、文件扩展名或 MIME，也不拼接上
       "return_url": "https://pan.baidu.com/union/spirit/launch?...",
       "return_target_type": "directory",
       "client_return_target_type": "file",
-      "return_hint": "点击查看"
+      "return_hint": "点击查看",
+      "return_markdown": "[点击查看](https://pan.baidu.com/union/spirit/launch?...)"
     }
   ]
 }
 ```
+
+> **注意**：`search` 的结果在**顶层 `items[]`**，不在 `data` 里；每项都带 `return_markdown`，回复时必须逐项原样输出 `[点击查看](...)`，不得把结果整理成不带链接的清单。
+
+### search-content 命令输出
+
+本次有限候选处理成功的示例（ID、内容为示例值，链接为占位值；实际展示使用 CLI 返回的完整链接）：
+
+```json
+{
+  "code": 0,
+  "data": {
+    "request_id": "1234567890123456", "status": "succeeded",
+    "query": "项目验收", "scope": "/apps/bdpan/docs",
+    "hits": [{
+      "fsid": "9007199254740993", "file_name": "report.pdf", "path": "/apps/bdpan/docs/report.pdf",
+      "snippet": "项目验收前需完成资料核对与问题闭环。", "pid": "123456", "source": 7,
+      "source_ref_id": "ref_001", "locator": null, "file_url_target": "file",
+      "file_url": "https://pan.baidu.com/union/spirit/launch?..."
+    }],
+    "total": 1, "total_scope": "returned_candidates", "returned_count": 1,
+    "next_page_token": null,
+    "source_refs": [{
+      "source_ref_id": "ref_001", "fsid": "9007199254740993", "file_name": "report.pdf",
+      "path": "/apps/bdpan/docs/report.pdf", "pid": "123456", "locator": null, "file_url_target": "file",
+      "file_url": "https://pan.baidu.com/union/spirit/launch?..."
+    }],
+    "index_status": "unknown",
+    "capabilities": {"locator": false, "server_pagination": false, "index_status": false},
+    "show_msg": "以下是本次找到的正文片段，可能未覆盖全部相关内容。暂不提供准确的正文位置或继续翻页，无法确认资料是否已完成搜索准备。",
+    "retryable": false
+  },
+  "error": ""
+}
+```
+
+| 字段 | 含义 |
+|------|------|
+| `code` / `error` | 成功为 `0` / `""`；失败 `code=1` 且非零退出，展示 `data.show_msg`（缺失时用 `error`），不能当零命中 |
+| `data.status` | `succeeded` 为本次候选处理成功；`partial` 仅为客户端裁剪；失败为 `failed` 或 `unsupported` |
+| `total` / `returned_count` | `total_scope=returned_candidates`：过滤、去重后且裁剪前的本次候选数 / 实际 `hits` 数，均非全网盘命中数 |
+| `hits` / `source_refs` | 每个 hit 按 `source_ref_id` 匹配来源；同文件可有多个引用，ID 不跨请求复用，`fsid` 保留字符串；内部 ID 不向用户展示 |
+| `file_url` / `file_url_target` | CLI 生成的查看链接，原样用于 `[点击查看](链接)`，目标为 `file` 或 `directory`；无法获取账号 UK 时降级为目录链接，另行说明实际目标；空链接不能编造 |
+| `snippet` | 命中的正文片段，用于回答"文档里有没有提到某某"。**可能是服务端占位文案而非正文原话**，典型形态为「命中相关文档: {文件名}（正文索引生成中）」——此时不得当作正文片段展示，要说明索引未就绪，也不能据此断言文档里没有该内容 |
+| 可选字段 | `pid` 是不透明片段标识；`source` 已知时为 7；`file_url_target` 有目标时返回，`file_url_error` 有降级/失败提示时返回；`error_code` 失败时返回 |
+| `locator` / `next_page_token` / `index_status` | 当前为 null / null / `unknown`，对应三项 `capabilities=false`，不能推断定位、续页或索引完成 |
+| `request_id` / `show_msg` / `retryable` | 请求排查 ID / 用户话术 / 是否允许重试，失败时保留 `request_id` 和 `error_code` |
+
+零结果为 `hits/source_refs=[]`、`total/returned_count=0`，仍不能断言资料不存在。`path/scope` 展示时映射为 `我的应用数据/bdpan/...`；链接协议参数保持原样。
+
+> **展示要求**：每条命中都必须在回复里带上 `[点击查看](file_url)`，不得只给文件名或片段。链接字段是 `file_url`，本命令不返回 `return_markdown`。
 
 ### mv/cp/rename/mkdir 命令输出
 
@@ -783,6 +956,118 @@ Skill/Agent 不判断客户端协议、文件扩展名或 MIME，也不拼接上
 ```
 
 `mv`、`cp`、`rename`、`mkdir` 的链接必须指向操作完成后的实际目标；当前 Web 对文件目标仍以所在目录兜底，其他原有状态字段保持兼容。若 CLI 无法定位目标或生成链接失败，保留成功状态和实际路径，不得填充伪链接。
+
+### get-content 命令输出
+
+`data` **恒为数组**，顺序与输入的 fsid 一致，一个文件一项。
+
+同步类型（`.txt`/`.md`）—— 该项带正文：
+
+```json
+{
+  "code": 0,
+  "data": [
+    {
+      "fs_id": 1100987500222364,
+      "fsid": "1100987500222364",
+      "name": "test.txt",
+      "path": "/apps/bdpan/test.txt",
+      "content": "test content\n\nmodify\n\nhh",
+      "return_url": "https://pan.baidu.com/union/spirit/launch?fsid=...&owner_uid=...&target=file",
+      "return_hint": "点击查看",
+      "return_markdown": "[点击查看](https://pan.baidu.com/union/spirit/launch?...)"
+    }
+  ],
+  "error": ""
+}
+```
+
+异步类型（`.docx`/`.pdf` 等）—— 该项**只有 `task_id`、没有 `content`**：
+
+```json
+{
+  "code": 0,
+  "data": [
+    {
+      "fs_id": 986232775041442,
+      "fsid": "986232775041442",
+      "name": "报告.docx",
+      "path": "/apps/bdpan/报告.docx",
+      "task_id": "2f6fa212-b2fd-4318-857a-f6dc94e3cc7e",
+      "return_url": "https://pan.baidu.com/union/spirit/launch?fsid=...&target=file",
+      "return_hint": "点击查看",
+      "return_markdown": "[点击查看](https://pan.baidu.com/union/spirit/launch?...)"
+    }
+  ],
+  "error": ""
+}
+```
+
+部分成功 —— 数组完整返回，失败项带 `error`，信封汇总 + 退出码 1：
+
+```json
+{
+  "code": 1,
+  "data": [
+    { "fs_id": 1100987500222364, "fsid": "...", "content": "test content", "return_url": "..." },
+    { "fs_id": 123456789, "fsid": "123456789", "error": "未找到 fsid 对应的文件: 123456789" }
+  ],
+  "error": "1/2 个文件读取失败"
+}
+```
+
+### get-content-result 命令输出
+
+任务状态是任务级信息，因此这里 `data` 是**对象**（与 `get-content` 的数组不同）：
+
+```json
+{
+  "code": 0,
+  "data": {
+    "task_id": "2f6fa212-b2fd-4318-857a-f6dc94e3cc7e",
+    "status": "succeeded",
+    "files": [
+      {
+        "fs_id": 986232775041442,
+        "fsid": "986232775041442",
+        "name": "allowlist_test_报告.docx",
+        "path": "/mcp_test_folder/allowlist_test_报告.docx",
+        "content": "宁德时代股价调研报告\n...",
+        "page_start": 1,
+        "page_end": 1,
+        "page_num": 1,
+        "char_count": 852,
+        "return_url": "https://pan.baidu.com/union/spirit/launch?fsid=...&target=file",
+        "return_hint": "点击查看",
+        "return_markdown": "[点击查看](https://pan.baidu.com/union/spirit/launch?...)"
+      }
+    ]
+  },
+  "error": ""
+}
+```
+
+正文超长时该文件 `content` 为空、`url` 有值：
+
+```json
+{
+  "fsid": "91691574906438",
+  "name": "你好.docx",
+  "content": "",
+  "url": "http://netdisk-ai-mcp-bj.bj.bcebos.com/ai-filecontent/...?x-bce-security-token=...",
+  "page_start": 1,
+  "page_end": 21,
+  "page_num": 21,
+  "char_count": 53300,
+  "truncated": false
+}
+```
+
+- `page_start`/`page_end` 是**实际读取的页范围**，`page_num` 是文档总页数，`char_count` 是正文完整字数（转存 BOS 时也准确）。
+- `truncated=true` 表示因**单文件 50 万字上限**被截断，不是完整正文。
+- 按文件失败时 `content` 为空、`error` 有值。**错误信息只有一个 `error` 字段（字符串），没有 `err_code`/`err_msg` 字段**——服务端返回的错误会把原始 `err_msg` 原样保留，格式为 `{服务端 err_msg}（错误码 {N}）`，用正则 `（错误码 (\d+)）` 取出错误码；CLI 本地校验类错误（如「该文件类型不支持读取正文」）没有这个后缀，需要按文案判断。
+
+> **展示要求**：`get-content` 与 `get-content-result` 的每一项都带 `return_markdown`，回复正文时必须逐项一起给出 `[点击查看](...)`。链接和正文/`url` 出现在同一条回复里，不能只给内容。
 
 ---
 
@@ -856,6 +1141,52 @@ result = subprocess.run(
 | Path not allowed | 路径不在允许范围 | 使用 /apps/bdpan/ 下的路径 |
 | File not found | 文件不存在 | 检查路径是否正确 |
 | errno=13045 | 自己的分享链接 | 文件已在网盘中，直接使用 `bdpan ls` 查找 |
+
+### 读取正文（`get-content` / `get-content-result`）错误码
+
+| 错误码 | 说明 | 解决方案 |
+|--------|------|---------|
+| 21061 / 21062 / 21064 | 文本预览：文件不存在 / 校验失败 / 超过 20MB 上限 | 确认 fsid；超过 20MB 的 `.txt`/`.md` 无法读取 |
+| 40101 | 参数不合法（fsids 为空或超 5 个、多文件带页参数、页参数非法、Excel 带页参数） | 按提示调整入参 |
+| 40102 | 任务不存在 | `taskid` 失效，重新发起 `get-content` |
+| 40103 | 文件不存在或无权访问 | 确认文件在应用目录内 |
+| 40104 | 文件类型不支持（或目标是目录） | 见上方支持的类型清单 |
+| 40105 | 文件大小超出限制 | 该文件无法读取 |
+| 40106 | 单次请求读取内容超出限制（页数/字符上限） | 减少文件数，或用 `--page-start`/`--page-end` 分片读取 |
+| 40107 | 并发任务数超出限制 | 等当前任务结束后再发起新的读取 |
+| 40108 | **当日读取配额超限**（字数 / 页数 / 不同文件数） | 次日再试，或减少单次读取量；`error` 文案会说明是哪一项到顶 |
+| 50101 | **文件解析失败（总类码，必须看 `error` 文案细分）**：含「文件转换中」→ 可重试；含「获取文件解析信息失败」/「获取文件正文失败」→ 可重试；含「文件无效」→ 重试无用 | 见下方「50101 重试指引」 |
+| 50102 | 任务执行超时 | 稍后重试 |
+| 50103 | 服务内部错误 | 稍后重试 |
+
+> 按文件返回的错误（40103~40108、50101）出现在该项的 `error` 字段上（**没有 `err_code`/`err_msg` 字段**），**只让该项失败**，同一批其他文件照常返回。
+
+#### 50101 重试指引（文件解析失败）
+
+`50101` 是「文件解析失败」的**总类码**，下面有几种完全不同的情况。**只看错误码无法判断该怎么办，必须看 `error` 里的文案**：
+
+| `error` 文案包含 | 真实原因 | 该怎么做 |
+|---|---|---|
+| **文件转换中** | 该文件首次被读取，服务端正在做格式转换 | ✅ **隔一段时间后重新发起**（PPT/Excel 类通常需要 1~5 分钟） |
+| 获取文件解析信息失败 | 解析服务抖动或超时 | ✅ 可重试，间隔 5~30 秒 |
+| 获取文件正文失败 | 拉取正文时网络抖动 | ✅ 可重试 |
+| 文件无效 | 文件本身有问题（损坏、格式异常） | ❌ 重试无用，告知用户文件无法解析 |
+
+**重试规则：**
+
+- **只重试失败的那几个 `fsid`**。不要把整批重发——已成功的文件会被重复读取，白白消耗当日配额（40108）。
+- `status=partial` 按「部分成功」处理，只对失败项重试。
+- 间隔 **30~60 秒**，总时长上限 **5 分钟**；超时后按失败告知用户。
+- 重试 = 对失败 fsid 重新执行 `get-content`（旧任务已是终态，一定会新建任务）。
+- 服务端自身的重试窗口只有约 1 分钟，**不足以覆盖 PPT/Excel 的转换耗时**，拉长等待窗口这件事由调用方负责。
+
+**不要重试的情况**：`40103`/`40104`/`40105`（文件本身的问题）、`40108`（当日配额，次日 0 点重置）、`40106`（不是失败，是截断，看 `truncated`）。
+
+**给用户的文案：**
+
+- 等待中：`该文件首次读取需要先做格式转换（PPT、Excel 类通常需要 1~5 分钟），正在解析中，请稍候…`
+- 超时：`该文件解析超时（已等待约 5 分钟）。建议稍后重新尝试；如果多次失败，可能是文件本身无法解析。`
+- 文件无效：`该文件无法解析，可能是文件损坏或格式异常，请检查文件后重试。`
 
 ---
 

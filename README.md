@@ -5,13 +5,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/BaiduNetdiskAIBot/bdpan-storage/releases"><img src="https://img.shields.io/badge/version-v1.2.0-blue" alt="Version"></a>
+  <a href="https://github.com/BaiduNetdiskAIBot/bdpan-storage/releases"><img src="https://img.shields.io/badge/version-v1.7.6-blue" alt="Version"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-green" alt="License"></a>
   <a href="https://pan.baidu.com/apaastobui/developer#/developer/skill"><img src="https://img.shields.io/badge/skill-baidu--netdisk-orange" alt="Skill"></a>
 </p>
 
 <p align="center">
-  上传 / 下载 / 转存 / 分享 / 搜索 / 移动 / 复制 / 重命名 / 创建文件夹<br/>
+  上传 / 下载 / 转存 / 分享 / 搜索 / 读取文件正文 / 移动 / 复制 / 重命名 / 创建文件夹<br/>
   适配 Claude Code · OpenClaw · DuClaw · KimiClaw · Manus 等 AI Agent
 </p>
 
@@ -67,6 +67,7 @@ Skill 自动识别意图、执行操作、返回格式化结果。
 | **分享** | 生成分享链接（1天、7天、30天、永久） | "把 report.pdf 分享给别人" |
 | **列表查询** | 查看网盘文件列表 | "看看网盘里有什么文件" |
 | **搜索** | 按关键词/类型搜索 | "在网盘搜一下所有图片" |
+| **读取文件正文** | 读取 txt / md / Word / PDF / PPT / Excel 的正文内容 | "读一下网盘里的 report.docx" |
 | **移动** | 移动文件到指定目录 | "把 report.pdf 移动到 backup 目录" |
 | **复制** | 复制文件到指定目录 | "复制 config.yaml 到 backup" |
 | **重命名** | 重命名文件或文件夹 | "把 old.pdf 重命名为 new.pdf" |
